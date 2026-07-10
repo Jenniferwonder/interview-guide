@@ -1,6 +1,6 @@
 # 我的 InterviewGuide 学习产出
 
-> **学习目标**：AI 应用开发工程师
+> **学习方向**：从前端扩展到 AI 全栈
 > **学习周期**：2026.07.10 - 2026.07.15
 > **原项目**：[Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)
 
@@ -15,8 +15,8 @@
 | Day 1 | 环境搭建 + 架构概览 | — |
 | Day 2 | AI 核心链路（多 Provider / 结构化输出 / Prompt 工程） | [→](notes/02-ai-core.md) |
 | Day 3 | RAG + 异步 + 语音 | [→](notes/03-rag-async-voice.md) |
-| Day 4 | 工程化 + 面试表达 | [→](notes/04-engineering.md) |
-| Day 5 | 模拟面试 + 查缺补漏 | — |
+| Day 4 | 工程化实践 | [→](notes/04-engineering.md) |
+| Day 5 | 查缺补漏 + 知识体系梳理 | — |
 
 ---
 

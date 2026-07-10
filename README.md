@@ -1,7 +1,7 @@
-# 🎯 InterviewGuide 源码学习 — AI 应用开发工程师
+# 🎯 InterviewGuide 源码精读 — Spring AI + RAG 全栈项目学习
 
-> 通过精读 [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)
-> 源码，掌握 Spring AI + RAG + 多模态全栈 AI 应用开发的核心能力。
+> 精读 [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)
+> 源码，深入理解 Spring AI 集成、RAG 检索增强、异步任务编排与实时语音通信的工程实践。
 
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-green?logo=springboot)](https://spring.io/projects/spring-boot)
@@ -29,8 +29,8 @@
 | Day 1 | 环境搭建 + 架构概览 | 跑通全链路，理解模块划分 | ⬜ |
 | Day 2 | AI 核心链路 | 多 Provider 管理 / 结构化输出 / Prompt 工程 | ⬜ |
 | Day 3 | RAG + 异步 + 语音 | pgvector 检索 / Redis Stream / WebSocket 语音 | ⬜ |
-| Day 4 | 工程化实践 | 限流 / 安全 / 架构决策 / 面试表达 | ⬜ |
-| Day 5 | 模拟面试 | 高频题自测 / 核心链路走读 | ⬜ |
+| Day 4 | 工程化实践 | 限流 / 安全 / 架构决策 | ⬜ |
+| Day 5 | 查缺补漏 | 全链路走读 + 知识体系梳理 | ⬜ |
 
 详细计划 → [LEARNING_PLAN.md](LEARNING_PLAN.md)
 
@@ -84,6 +84,6 @@ git checkout my-learning && git merge master
 
 ## 🙋 关于我
 
-AI 应用开发工程师求职中。通过本项目深度学习 LLM 工程化落地的完整链路。
+在职前端开发，日常工作以 React + TypeScript 为主。正在向 AI 全栈方向扩展能力边界，通过精读 Spring AI + RAG 项目源码，补齐后端架构和 LLM 工程化落地的认知拼图。
 
 *最后更新：2026.07.10*

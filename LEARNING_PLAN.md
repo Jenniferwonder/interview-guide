@@ -1,7 +1,7 @@
-# InterviewGuide 项目学习行动计划 — AI 应用开发工程师面试准备
+# InterviewGuide 项目学习行动计划 — 全栈 AI 应用开发
 
-> **目标岗位**：AI 应用开发工程师
-> **项目定位**：基于 Spring AI + RAG + 多模态的全栈智能面试平台
+> **学习方向**：从前端扩展到 AI 全栈
+> **项目定位**：基于 Spring AI + RAG + 多模态的智能面试平台
 > **预计总耗时**：3-5 天（约 25-35 小时）
 
 ---
@@ -12,8 +12,8 @@
 Day 1: 跑起来 + 摸清架构
 Day 2: AI 核心链路深挖（LLM 调用 / 结构化输出 / Prompt 工程）
 Day 3: RAG + 异步 + 语音（知识库检索增强 / Redis Stream / WebSocket 语音）
-Day 4: 工程化能力 + 面试表达（限流 / 安全 / 评估架构 / 项目亮点整理）
-Day 5: 模拟面试 + 查缺补漏
+Day 4: 工程化实践（限流 / 安全 / 评估架构 / 关键设计决策）
+Day 5: 查缺补漏 + 知识体系梳理
 ```
 
 ---
@@ -36,7 +36,7 @@ cp .env.example .env
 cd frontend && pnpm install && pnpm run dev
 ```
 
-**验证点**：浏览器打开 `http://localhost:5173`，能看到面试中心页面。
+**验证点**：浏览器打开 `http://localhost:5173`，能看到首页。
 
 ### 1.2 理解项目骨架（1.5h）
 
@@ -73,20 +73,20 @@ cd frontend && pnpm install && pnpm run dev
 
 ## Day 2：AI 核心链路深挖（~7h）
 
-> 这是面试的重点考察区域，需要能讲清楚"怎么做"和"为什么这么做"。
+> 这部分是理解 LLM 工程化落地的关键，需要弄清楚每个环节"怎么做"和"为什么这么做"。
 
 ### 2.1 LLM Provider 管理与调用（2h）
 
 **必读源码**：
 
-| 类 | 为什么重要 |
+| 类 | 关注点 |
 |----|----------|
 | `LlmProviderRegistry.java` | 多 Provider 注册中心，理解如何动态获取 ChatClient |
 | `ApiPathResolver.java` | OpenAI 兼容 API 路径解析 |
 | `StructuredOutputInvoker.java` | 结构化输出的核心封装（重试、JSON 修复） |
 | `StructuredOutputProperties.java` | 结构化输出配置 |
 
-**面试能讲清楚**：
+**需理解的关键点**：
 1. 如何支持多个 LLM Provider（DashScope/Kimi/DeepSeek/GLM）？
 2. Spring AI 的 ChatClient 是怎么集成的？
 3. 结构化输出为什么要封装？JSON 解析失败怎么处理？
@@ -99,17 +99,17 @@ cd frontend && pnpm install && pnpm run dev
 ```
 app/src/main/resources/prompts/
 ├── resume-analysis-system.st      # 简历分析 Prompt
-├── interview-question-skill-system.st  # 面试出题 Prompt
-├── interview-evaluation-system.st      # 面试评估 Prompt（分批评估）
+├── interview-question-skill-system.st  # 出题 Prompt
+├── interview-evaluation-system.st      # 评估 Prompt（分批评估）
 ├── interview-evaluation-summary-system.st  # 二次汇总 Prompt
 ├── knowledgebase-query-system.st       # RAG 问答 Prompt
 ├── knowledgebase-query-rewrite.st      # 查询改写 Prompt
 └── jd-parse-system.st                  # JD 解析 Prompt
 ```
 
-**面试能讲清楚**：
+**需理解的关键点**：
 1. 为什么用 StringTemplate 而不是字符串拼接？
-2. 面试评估为什么要"分批评估 → 二次汇总"？
+2. 评估为什么要"分批评估 → 二次汇总"？
 3. 查询改写（Query Rewrite）在 RAG 中起什么作用？
 4. System Prompt 和 User Prompt 分别放什么内容？
 
@@ -128,9 +128,9 @@ app/src/main/resources/skills/
 
 以及 `InterviewQuestionService` 中加载 SKILL.md 和出题的逻辑。
 
-**面试能讲清楚**：
+**需理解的关键点**：
 1. Skill.md 的结构设计：考察范围、难度分布、参考知识库
-2. 出题时如何做到"历史题目去重"？
+2. 出题时如何做到历史题目去重？
 3. 如何根据 JD 内容动态调整出题方向？
 
 ### 2.4 统一评估引擎（2h）
@@ -143,8 +143,8 @@ app/src/main/resources/skills/
 | `EvaluationReport.java` | 评估报告结构 |
 | `QaRecord.java` | 问答记录模型 |
 
-**面试能讲清楚**：
-1. 文字面试和语音面试如何共用同一套评估引擎？
+**需理解的关键点**：
+1. 文字和语音两种模式如何共用同一套评估引擎？
 2. 大批量问答如何分批评估？Token 超限怎么处理？
 3. 评估结果的结构化输出包含哪些维度？
 4. LLM 评估失败时的降级兜底策略？
@@ -165,7 +165,7 @@ app/src/main/resources/skills/
 | SSE 流式响应实现 | 如何做打字机效果 |
 | pgvector 配置 | 向量维度 1024、COSINE 距离 |
 
-**面试能讲清楚**：
+**需理解的关键点**：
 1. 文档向量化的完整流程（上传 → 分块 → Embedding → 存 pgvector）
 2. RAG 的检索链路（Query Rewrite → Embedding → 向量检索 → 拼接 Context → LLM 生成）
 3. 为什么选 pgvector 而不是 Milvus/Weaviate/Pinecone？
@@ -183,14 +183,14 @@ app/src/main/resources/skills/
 | `AbstractStreamConsumer.java` | 消费者模板（确认/重试/死信） |
 | `resume/` 模块的 listener 包 | 简历分析消费者具体实现 |
 
-**面试能讲清楚**：
+**需理解的关键点**：
 1. 为什么用 Redis Stream 而不是 Kafka/RabbitMQ？
 2. 生产者和消费者的模板设计解决了什么问题？
 3. 消费失败后重试几次？超过重试次数怎么办？
 4. 如何处理"实体已删除但消息还在"的情况？
 5. 前端如何实时获取异步任务进度？
 
-### 3.3 语音面试（2.5h）
+### 3.3 实时语音通信（2.5h）
 
 **必读源码**：
 
@@ -201,8 +201,8 @@ app/src/main/resources/skills/
 | VAD 服务端断句逻辑 | 静音检测、自动断句 |
 | 回声防护 + 手动提交 | 避免 AI 语音被误录 |
 
-**面试能讲清楚**：
-1. WebSocket 在语音面试中的作用？为什么不用 HTTP？
+**需理解的关键点**：
+1. WebSocket 在实时语音中的作用？为什么不用 HTTP？
 2. ASR 和 TTS 的数据流是怎样的？
 3. "句子级并发 TTS，边生成边合成边播放"是怎么实现的？
 4. 服务端 VAD 断句的原理？中间结果和最终结果的区别？
@@ -210,7 +210,7 @@ app/src/main/resources/skills/
 
 ---
 
-## Day 4：工程化能力 + 面试表达（~7h）
+## Day 4：工程化实践（~7h）
 
 ### 4.1 限流系统（1.5h）
 
@@ -222,7 +222,7 @@ app/src/main/resources/skills/
 | `RateLimitAspect.java` | AOP 切面实现 |
 | Redis Lua 脚本 | 滑动窗口算法 |
 
-**面试能讲清楚**：
+**需理解的关键点**：
 1. 为什么要做可重复注解？一个接口配多个限流维度的场景？
 2. 滑动窗口算法 vs 固定窗口 vs 令牌桶？
 3. 为什么用 Redis Lua 脚本而不是 Java 代码？
@@ -237,64 +237,61 @@ app/src/main/resources/skills/
 | API Key 加密存储 | `~/.interview-guide/` 目录加密落盘 |
 | CORS 配置 | 跨域安全 |
 
-**面试能讲清楚**：
+**需理解的关键点**：
 1. Prompt 注入攻击是什么？如何防护？
 2. Provider API Key 怎么安全存储和传输？
 3. 配置分层：`.env` → `application.yml` → `@ConfigurationProperties`
 
 ### 4.3 全局架构设计决策（1.5h）
 
-整理项目中的关键架构决策，面试时可以主动展示技术判断力：
+整理项目中的关键架构决策，理解每个选择背后的权衡：
 
 | 决策 | 选择 | 理由 |
 |------|------|------|
 | 向量数据库 | pgvector（非独立向量库） | 精简架构，PG 向量能力够用 |
 | 消息队列 | Redis Stream（非 Kafka） | 精简架构，不想引入太多组件 |
-| 构建工具 | Gradle（非 Maven） | 个人偏好，更灵活的 DSL |
+| 构建工具 | Gradle（非 Maven） | 更灵活的 DSL |
 | 对象存储 | MinIO / RustFS（S3 兼容） | 不绑定云厂商 |
 | 语音模型 | 千问3（ASR/TTS/LLM 统一 Key） | 简化配置 |
 | 事务隔离 | LLM/S3/HTTP 不在事务内 | 避免长事务和连接占用 |
 | 响应格式 | HTTP 200 + Result.error(code, msg) | 统一异常处理，业务错误不抛 HTTP 异常 |
 
-### 4.4 项目亮点总结（3h）
+### 4.4 核心设计模式总结（3h）
 
-**面试中主动展示的 5 个亮点**（每个准备 3-5 分钟的口述）：
+项目中体现的 5 个关键设计，值得深入理解：
 
-#### 亮点 1：多 Provider + 统一结构化输出
-> 设计了 `LlmProviderRegistry` 管理多 LLM Provider，配合 `StructuredOutputInvoker` 实现带重试的结构化输出。新增 Provider 只需配置，不需要改业务代码。这体现了**开闭原则**和**策略模式**。
+#### 1. 多 Provider + 统一结构化输出
+`LlmProviderRegistry` 管理多 LLM Provider，配合 `StructuredOutputInvoker` 实现带重试的结构化输出。新增 Provider 只需配置，不需要改业务代码。体现了**开闭原则**和**策略模式**。
 
-#### 亮点 2：RAG 全链路（文档 → 向量 → 检索 → 生成）
-> 完整实现了 RAG 知识库系统：Tika 文档解析 → 分块策略 → pgvector 向量化 → Query Rewrite → 相似度检索 → SSE 流式生成。关键细节：分块大小、Overlap、TopK 策略、查询改写对检索质量的影响。
+#### 2. RAG 全链路（文档 → 向量 → 检索 → 生成）
+完整实现了 RAG 知识库系统：Tika 文档解析 → 分块策略 → pgvector 向量化 → Query Rewrite → 相似度检索 → SSE 流式生成。关键细节：分块大小、Overlap、TopK 策略、查询改写对检索质量的影响。
 
-#### 亮点 3：Redis Stream 异步任务模板
-> 设计了 `AbstractStreamProducer` / `AbstractStreamConsumer` 模板，把创建 Stream、发送消息、消费确认、重试、死信处理封装成可复用的抽象。新增异步任务只需继承模板实现业务逻辑。
+#### 3. Redis Stream 异步任务模板
+设计了 `AbstractStreamProducer` / `AbstractStreamConsumer` 模板，把创建 Stream、发送消息、消费确认、重试、死信处理封装成可复用的抽象。新增异步任务只需继承模板实现业务逻辑。
 
-#### 亮点 4：文字+语音统一评估引擎
-> 文字面试和语音面试共用 `UnifiedEvaluationService`，采用"分批评估 + 结构化输出 + 二次汇总 + 降级兜底"策略，既解决了 Token 限制，又保证了评估质量。
+#### 4. 文字+语音统一评估引擎
+文字和语音模式共用 `UnifiedEvaluationService`，采用"分批评估 + 结构化输出 + 二次汇总 + 降级兜底"策略，既解决了 Token 限制，又保证了评估质量。
 
-#### 亮点 5：实时语音面试（WebSocket + 并发 TTS）
-> WebSocket 全双工通信 + 服务端 VAD 断句 + 句子级并发 TTS"边生成边合成边播放"，首包延迟控制在 200ms。有意识地讨论了当前局限性和改进方向（WebRTC、端到端语音模型）。
+#### 5. 实时语音（WebSocket + 并发 TTS）
+WebSocket 全双工通信 + 服务端 VAD 断句 + 句子级并发 TTS "边生成边合成边播放"，首包延迟控制在 200ms。明确了当前局限性和改进方向（WebRTC、端到端语音模型）。
 
 ---
 
-## Day 5：模拟面试 + 查缺补漏（~4h）
+## Day 5：查缺补漏 + 知识体系梳理（~4h）
 
-### 5.1 高频面试问题自测
+### 5.1 重点技术反刍
 
-准备以下问题的 2 分钟回答：
-
-**Spring AI 相关**：
+**Spring AI**：
 1. Spring AI 2.0 和 1.x 有什么变化？
 2. `ChatClient` vs `ChatModel` 的区别？
 3. Spring AI Agent Utils 是什么？项目中怎么用的？
 4. Advisors 的作用？
 
-**RAG 相关**：
-1. RAG 的完整流程？
-2. 如何评估 RAG 的检索质量？
-3. Chunk 大小对检索效果的影响？
-4. Query Rewrite 为什么重要？
-5. 如何处理检索到的文档和用户问题的相关性？
+**RAG**：
+1. 如何评估 RAG 的检索质量？
+2. Chunk 大小对检索效果的影响？
+3. Query Rewrite 为什么重要？
+4. 如何处理检索到的文档和用户问题的相关性？
 
 **LLM 工程化**：
 1. Prompt 模板管理的实践？
@@ -308,11 +305,11 @@ app/src/main/resources/skills/
 2. Record 类型在项目中的使用场景？
 3. 虚拟线程和平台线程的区别？
 
-### 5.2 代码走读练习
+### 5.2 核心链路走读
 
 挑 3 个核心链路，不看代码画出时序图：
 1. **简历分析链**：上传 → 异步分析 → LLM 调用 → 报告生成
-2. **模拟面试链**：选择 Skill → 出题 → 回答 → 评估 → 报告
+2. **出题与评估链**：选择 Skill → 出题 → 回答 → 评估 → 报告
 3. **RAG 问答链**：提问 → Query Rewrite → 向量检索 → Context → SSE 生成
 
 ### 5.3 查缺补漏
@@ -382,6 +379,6 @@ interview-guide/
 
 1. **带着问题读代码**：每个模块先想 3 个"为什么这样做"，再去源码中找答案
 2. **画图 > 死记**：核心链路的时序图比背类名有效得多
-3. **讲出来**：每学完一个模块，用 3 分钟口头总结给空气听
+3. **讲出来**：每学完一个模块，用 3 分钟口头总结
 4. **对比学习**：这个项目用 Redis Stream，想想换成 Kafka 会有什么不同
-5. **面试视角**：读代码时始终想"面试官会怎么问这个问题"
+5. **前端视角**：关注后端设计如何影响前端的数据获取和状态管理
