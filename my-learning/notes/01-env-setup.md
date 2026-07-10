@@ -4,7 +4,9 @@
 
 ## 设计目标
 
-InterviewGuide 依赖 3 个基础设施：PostgreSQL（含 pgvector 向量扩展）、Redis、S3 兼容对象存储。本文通过 Docker Compose 一键启动，并配置 DataGrip 管理数据库。
+InterviewGuide 依赖 3 个基础设施：PostgreSQL（含 pgvector 向量扩展）、Redis、S3 兼容对象存储。本文通过 Docker Compose 一键启动，并记录实际操作过程。
+
+> **实操环境**：Windows 11 / Docker Desktop 29.6.1 / Docker Compose v5.2.0
 
 ---
 
@@ -74,7 +76,50 @@ services:
 - **Healthcheck**：每个服务定义了健康检查，下游服务不会在依赖未就绪时启动
 - **pgvector 镜像**：`pgvector/pgvector:pg16` 官方封装，开箱即用向量扩展
 
-### 2.2 服务信息速查
+### 2.2 启动过程实录
+
+```powershell
+# 1. 验证 Docker
+docker --version          # Docker version 29.6.1, build 8900f1d
+docker compose version    # Docker Compose version v5.2.0
+
+# 2. 一键启动
+docker compose -f docker-compose.dev.yml up -d
+```
+
+首次启动会自动拉取镜像，耗时取决于网络：
+
+```
+Image pgvector/pgvector:pg16 Pulling
+Image redis:7 Pulling
+Image rustfs/rustfs:latest Pulling
+```
+
+镜像拉取完成后自动创建容器并启动。验证运行状态：
+
+```powershell
+docker compose -f docker-compose.dev.yml ps
+```
+
+输出：
+
+```
+NAME                 IMAGE                    STATUS
+interview-postgres   pgvector/pgvector:pg16   Up (healthy)
+interview-redis      redis:7                  Up (healthy)
+interview-rustfs     rustfs/rustfs:latest     Up (unhealthy)
+```
+
+验证 PostgreSQL 连通性：
+
+```powershell
+docker exec interview-postgres pg_isready -U postgres
+# /var/run/postgresql:5432 - accepting connections
+```
+
+> **注意**：RustFS 的 healthcheck 在此版本中可能显示 `unhealthy`，这是 Alpine 镜像中 `timeout` 命令行为差异导致的假阳性，不影响 S3 API 正常使用。
+
+### 2.3 服务信息速查
 
 | 服务 | 端口 | 账号 / 密码 | 用途 |
 |------|------|-------------|------|
@@ -86,7 +131,20 @@ services:
 
 ## 3. RustFS Bucket 创建
 
-启动后访问 http://localhost:9001，用 `rustfsadmin / rustfsadmin` 登录，手动创建名为 `interview-guide` 的 bucket。
+RustFS 的 Web Console 运行在 `http://localhost:9001`。启动后用 `rustfsadmin / rustfsadmin` 登录，手动创建名为 `interview-guide` 的 bucket。
+
+也可通过命令行（需拉取 AWS CLI 镜像）：
+
+```powershell
+# 通过 Docker 容器运行 AWS CLI 创建 bucket
+docker run --rm `
+  -e AWS_ACCESS_KEY_ID=rustfsadmin `
+  -e AWS_SECRET_ACCESS_KEY=rustfsadmin `
+  -e AWS_DEFAULT_REGION=us-east-1 `
+  amazon/aws-cli `
+  --endpoint-url http://host.docker.internal:9000 `
+  s3 mb s3://interview-guide
+```
 
 此 bucket 对应 `.env` 中的 `APP_STORAGE_BUCKET=interview-guide`，用于存储简历文件、导出 PDF 等。
 
