@@ -26,9 +26,9 @@
 
 | 阶段 | 主题 | 产出 | 状态 |
 |------|------|------|------|
-| Day 1 | 环境搭建 + 架构概览 | 跑通全链路，理解模块划分 | ⬜ |
-| Day 2 | AI 核心链路 | 多 Provider 管理 / 结构化输出 / Prompt 工程 | ⬜ |
-| Day 3 | RAG + 异步 + 语音 | pgvector 检索 / Redis Stream / WebSocket 语音 | ⬜ |
+| Day 1 | 环境搭建 + 架构概览 | Docker Compose / DataGrip / pgvector 配置 | 🔄 |
+| Day 2 | AI 核心链路 | 多 Provider 管理 / 结构化输出 / Prompt 工程 | 🔄 |
+| Day 3 | RAG + 异步 + 语音 | pgvector 检索 / Redis Stream / WebSocket 语音 | 🔄 |
 | Day 4 | 工程化实践 | 限流 / 安全 / 架构决策 | ⬜ |
 | Day 5 | 查缺补漏 | 全链路走读 + 知识体系梳理 | ⬜ |
 
@@ -38,13 +38,26 @@
 
 ## 🧠 核心收获（持续更新）
 
+### ⚙️ Day 1：环境搭建 + 架构概览
+
 | # | 主题 | 笔记 | 关键收获 |
 |---|------|------|----------|
-| 1 | Spring AI 多 Provider 管理 | [📝](my-learning/notes/01-spring-ai-provider.md) | 策略模式 + 动态切换 + 结构化输出 |
-| 2 | RAG 检索增强全链路 | [📝](my-learning/notes/02-rag-pipeline.md) | 文档→向量→检索→生成全链路 |
-| 3 | Redis Stream 异步任务 | [📝](my-learning/notes/03-redis-stream-async.md) | 生产者/消费者模板 + 重试 + 死信 |
-| 4 | 统一面试评估引擎 | [📝](my-learning/notes/04-unified-evaluation.md) | 分批评估 + 二次汇总 + 降级兜底 |
-| 5 | 实时语音面试 | [📝](my-learning/notes/05-voice-interview.md) | WebSocket + VAD + 并发 TTS |
+| 1 | 本地环境搭建 | [📝](my-learning/notes/01-env-setup.md) | Docker Compose 一键启动 PG+pgvector+Redis+RustFS |
+
+### 🧩 Day 2：AI 核心链路
+
+| # | 主题 | 笔记 | 关键收获 |
+|---|------|------|----------|
+| 2 | Spring AI 多 Provider 管理 | [📝](my-learning/notes/02-spring-ai-provider.md) | 策略模式 + 动态切换 + 结构化输出 |
+| 3 | 统一评估引擎 | [📝](my-learning/notes/03-unified-evaluation.md) | 分批评估 + 二次汇总 + 降级兜底 |
+
+### 🔗 Day 3：RAG + 异步 + 语音
+
+| # | 主题 | 笔记 | 关键收获 |
+|---|------|------|----------|
+| 4 | RAG 检索增强全链路 | [📝](my-learning/notes/04-rag-pipeline.md) | 文档→向量→检索→生成全链路 |
+| 5 | Redis Stream 异步任务 | [📝](my-learning/notes/05-redis-stream-async.md) | 生产者/消费者模板 + 重试 + 死信 |
+| 6 | 实时语音通信 | [📝](my-learning/notes/06-voice-interview.md) | WebSocket + VAD + 并发 TTS |
 
 → 更多笔记见 [my-learning/notes/](my-learning/notes/)
 
