@@ -44,8 +44,8 @@ OpenAI 兼容 API 的路径解析。不同 Provider 的 chat/embedding 端点路
 | 默认 Provider | `app.ai.default-provider` | 不指定时自动回退 |
 | 连通性测试 | 限时 + 防内网访问 | 安全 + 可用性保障 |
 
-## 面试要点
+## 核心要点
 
-- **策略模式**：不同 Provider = 不同策略，`LlmProviderRegistry` 是上下文
-- **Spring AI 2.0**：`ChatClient` fluent API vs 旧版 `ChatModel`
-- **为什么不用 Spring 的 `@Primary` 多 Bean**：运行时动态切换，配置来自 DB 而非 Spring 容器
+- **策略模式**：不同 Provider = 不同策略，`LlmProviderRegistry` 是上下文，新增 Provider 只需注册无需改动调用方
+- **Spring AI 2.0**：`ChatClient` fluent API vs 旧版 `ChatModel`，2.0 提供了更简洁的链式调用和更好的 OpenAI 兼容性
+- **为什么不用 `@Primary` 多 Bean**：运行时动态切换，Provider 配置来自 DB 而非 Spring 容器，`@Primary` 无法满足热切换需求

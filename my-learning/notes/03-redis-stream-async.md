@@ -66,9 +66,9 @@ knowledge:vectorize → 文档向量化
 | 重试次数 | 3 次 | 超过即标记 FAILED，人工介入 |
 | 序列化 | JSON | 简单可读，调试方便 |
 
-## 面试要点
+## 核心要点
 
-- **Redis Stream vs Kafka**：Stream 轻量无需额外部署；Kafka 持久化更强、吞吐更高，适合大规模
-- **消费者组机制**：同组内消息只被一个消费者处理，实现负载均衡
-- **消息可靠性**：ACK 机制 + Pending 恢复 + 重试 + 死信
-- **为什么不是 `@Async`**：`@Async` 进程内队列，重启丢消息；Stream 持久化
+- **Redis Stream vs Kafka**：Stream 部署零成本，适合中小规模；Kafka 持久化更强、吞吐更高，适合大规模事件流
+- **消费者组机制**：同组内消息只被一个消费者处理，天然负载均衡；不同组独立消费同一 Stream，互不干扰
+- **消息可靠性**：ACK 确认 + Pending 消息恢复 + 最多 3 次重试 + FAILED 死信状态，形成完整兜底链路
+- **为什么不是 `@Async`**：`@Async` 依赖 JVM 内存队列，重启丢消息、无持久化；Stream 消息落盘 Redis，重启可恢复
