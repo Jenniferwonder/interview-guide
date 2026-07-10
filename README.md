@@ -38,25 +38,15 @@
 
 ## 🧠 核心收获（持续更新）
 
-### Spring AI 多 Provider 管理
-`LlmProviderRegistry` 策略模式设计，支持 DashScope / Kimi / DeepSeek / GLM 等 Provider
-动态切换，新增 Provider 仅需配置。配合 `StructuredOutputInvoker` 保证 LLM 输出可靠性。
+| # | 主题 | 笔记 | 关键收获 |
+|---|------|------|----------|
+| 1 | Spring AI 多 Provider 管理 | [📝](my-learning/notes/01-spring-ai-provider.md) | 策略模式 + 动态切换 + 结构化输出 |
+| 2 | RAG 检索增强全链路 | [📝](my-learning/notes/02-rag-pipeline.md) | 文档→向量→检索→生成全链路 |
+| 3 | Redis Stream 异步任务 | [📝](my-learning/notes/03-redis-stream-async.md) | 生产者/消费者模板 + 重试 + 死信 |
+| 4 | 统一面试评估引擎 | [📝](my-learning/notes/04-unified-evaluation.md) | 分批评估 + 二次汇总 + 降级兜底 |
+| 5 | 实时语音面试 | [📝](my-learning/notes/05-voice-interview.md) | WebSocket + VAD + 并发 TTS |
 
-### RAG 检索增强全链路
-Tika 文档解析 → 分块策略 → pgvector 向量化 → Query Rewrite → 相似度检索 →
-SSE 流式生成。关键决策：用 pgvector 而非独立向量库，精简架构。
-
-### Redis Stream 异步任务模板
-`AbstractStreamProducer` / `AbstractStreamConsumer` 模板化解耦，
-3 次重试 + 死信机制，消费前校验实体存在性。
-
-### 统一面试评估引擎
-文字/语音共用 `UnifiedEvaluationService`，"分批评估 → 结构化输出 → 二次汇总 → 降级兜底"
-解决 Token 限制并保证评估质量。
-
-### 实时语音面试
-WebSocket + 服务端 VAD + 句子级并发 TTS，首包延迟 200ms。
-有意识地讨论局限性和改进方向（WebRTC、端到端语音模型）。
+→ 更多笔记见 [my-learning/notes/](my-learning/notes/)
 
 ---
 
