@@ -1,22 +1,22 @@
-# InterviewGuide 学习行动计划 — 业务链路驱动 + 代码交付
+# 学习行动计划 — 工程级代码交付
 
 > **学习方向**：从前端扩展到 AI 全栈
-> **组织方式**：按项目的**三大核心功能 + 两大技术亮点**，每个交付物追踪一条完整业务链路
-> **预计总耗时**：3-5 天
+> **组织方式**：7 个工程级交付物，每个是完整的"发现问题 → 改动 → 验证"闭环
 
 ---
 
-## 六个交付物总览
+## 七个交付物总览
 
 ```
-交付物                   核心问题                             链路长度
-─────────────────────────────────────────────────────────────────────
-0  环境搭建              "项目怎么跑起来？"                   基础设施层
-1  LLM 集成层            "大模型怎么接？输出怎么保证可靠？"   配置 → 调用 → 解析
-2  智能简历分析          "AI 怎么异步分析文件？"              上传 → 存储 → 分析 → 报告
-3  模拟面试系统          "AI 怎么出题、追问、评估？"          Skill → 出题 → 评估 → 导出
-4  RAG 知识库问答        "怎么让 LLM 基于私有知识回答？"     文档 → 向量 → 检索 → 生成
-5  异步引擎 + 工程化     "系统怎么扛住并发？怎么安全？"      横切面全部模块
+交付物                   核心问题
+──────────────────────────────────────────────────────────────────────
+0  环境搭建              "怎么把全套基础设施跑起来？"
+1  LLM 调用可观测性      "大模型调用延迟、成功率、Token 消耗去哪看？"
+2  简历分析全链路测试    "异步任务链路怎么保证每个环节正确？"
+3  RAG 检索质量评估闭环  "怎么知道检索到的文档对用户有没有用？"
+4  Prompt A/B 测试框架   "两个 Prompt 哪个更好？怎么量化？"
+5  语音面试延迟诊断      "端到端延迟偏高的瓶颈到底在哪一段？"
+6  SSE 断连自动重连      "网络闪断导致回答丢失怎么办？"
 ```
 
 ---
@@ -29,7 +29,7 @@
 Docker Compose → PG+pgvector + Redis + RustFS → .env 配置 → 前后端启动
 ```
 
-### 必读源码
+### 必读文件
 
 | 文件 | 关注点 |
 |------|--------|
@@ -38,11 +38,9 @@ Docker Compose → PG+pgvector + Redis + RustFS → .env 配置 → 前后端启
 | `application.yml` | Spring Boot 如何通过 `${VAR:default}` 读取配置 |
 | `docker/postgres/init.sql` | 数据库初始化脚本 |
 
-### 代码改动
+### 产出
 
-**已完成**：创建 `.env`、配置 RustFS 凭证、修复代理拦截 S3 500 的问题。
-
-→ 记录在 `my-learning/code-changes/00-env-setup/`
+→ `my-learning/code-changes/00-env-setup/` + `my-learning/notes/01-env-setup.md`
 
 ### 踩坑记录
 
@@ -54,213 +52,254 @@ Docker Compose → PG+pgvector + Redis + RustFS → .env 配置 → 前后端启
 
 ---
 
-## 交付物 1：多 LLM Provider + 结构化输出
+## 交付物 1：LLM 调用可观测性
 
-### 链路
+### 核心问题
 
-```
-LlmProviderRegistry.getChatClient(provider)
-  → ChatClient.prompt().user().call()
-  → StructuredOutputInvoker（JSON 修复 + 重试）
-  → Prompt 模板 (StringTemplate) → LLM 返回 → Java 对象
-```
+> "项目接了多个 LLM Provider，但谁也不知道每个 Provider 的调用延迟有多少、Token 消耗多少钱、失败率多少、结构化输出重试了多少次。"
 
-### 必读源码
+### 工程方案
 
-| 文件 | 关注点 |
-|------|--------|
-| `common/ai/LlmProviderRegistry.java` | Provider 注册与 ChatClient 缓存 |
-| `common/ai/StructuredOutputInvoker.java` | 结构化输出的重试与 JSON 修复 |
-| `common/ai/ApiPathResolver.java` | OpenAI 兼容 API 路径解析 |
-| `modules/llmprovider/` | Provider 运行时管理与连通性测试 |
-| `resources/prompts/` | 14 个 StringTemplate Prompt 模板 |
+在 `LlmProviderRegistry` 中嵌入 Micrometer 指标，利用项目已有的 Micrometer 依赖，不引入新库：
 
-### 代码改动目标
+| 指标 | 来源 | 用途 |
+|------|------|------|
+| `llm.calls.count{provider,model,result}` | `LlmProviderRegistry` 包装层 | 各 Provider 调用次数和成功率 |
+| `llm.calls.duration{provider,model}` | 同上 | P50/P95/P99 延迟分布 |
+| `llm.tokens.used{provider,model,type}` | `ChatClient` 返回的 Usage 元数据 | Token 消耗统计 |
+| `llm.structured.retries{provider}` | `StructuredOutputInvoker` | 结构化输出重试次数 |
 
-**新增一个 LLM Provider**：在 `application.yml` / `.env` 中添加自定义 OpenAI 兼容 Provider 配置（如硅基流动 / Groq），验证运行时 `LlmProviderRegistry` 是否能自动发现并切换。
+### 改动范围
 
-改动范围：
-1. `.env` 中新增 `PROVIDER_MYPROVIDER_API_KEY` + `PROVIDER_MYPROVIDER_MODEL`
-2. `application.yml` 中新增 Provider 配置块（base-url、api-key）
-3. 通过 Admin UI 验证连通性
+| 文件 | 改动 |
+|------|------|
+| `common/ai/LlmProviderRegistry.java` | 在调用路径中包装 Timer + Counter |
+| `common/ai/StructuredOutputInvoker.java` | 在重试循环中增加 retries 计数器 |
+| `application.yml` | 暴露 `/actuator/metrics` 端点 |
 
----
+### 预期产出
 
-## 交付物 2：智能简历分析（上传 → 解析 → AI 评分 → 报告导出）
-
-### 链路
-
-```
-前端 UploadPage.tsx
-  → POST /api/resume/upload
-  → FileStorageService.uploadResume() → S3 存储
-  → AnalyzeStreamProducer.send() → XADD Redis Stream
-  → AnalyzeStreamConsumer.processMessage()
-    → Tika 文本提取 → 文本清洗
-    → LlmProviderRegistry.getChatClient() → resume-analysis-*.st Prompt
-    → StructuredOutputInvoker → ResumeAnalysisDTO
-  → ResumePersistenceService 落库
-  → 前端轮询 /api/resume/{id}/status → AnalysisPanel 展示
-  → iText 8 PDF 报告导出
-```
-
-### 必读源码
-
-| 文件 | 关注点 |
-|------|--------|
-| `modules/resume/ResumeController.java` | REST API 设计 |
-| `modules/resume/ResumeUploadService.java` | 业务编排（验证 → 存储 → 分析） |
-| `modules/resume/AnalyzeStreamProducer.java` | 生产者实现：如何发送异步任务 |
-| `modules/resume/AnalyzeStreamConsumer.java` | 消费者实现：如何消费并执行业务 |
-| `infrastructure/file/FileStorageService.java` | S3 上传/下载/删除封装 |
-| `infrastructure/file/DocumentParseService.java` | Tika 多格式解析 |
-| `infrastructure/file/FileHashService.java` | SHA-256 文件去重 |
-| `resources/prompts/resume-analysis-system.st` | System Prompt 设计 |
-| `resources/prompts/resume-analysis-user.st` | User Prompt 设计 |
-
-### 代码改动目标
-
-**追踪并记录一次完整的简历分析请求**——不是改代码，而是画一张带类名和方法名的完整时序图，标注每个环节的耗时特征（同步 vs 异步）。
+1. 触发几次 LLM 调用 → 访问 `/actuator/metrics/llm.calls.duration` 拉数据
+2. 输出一组 Grafana 查询语句（如果后续接 Prometheus + Grafana 可直接使用）
+3. 笔记：`my-learning/notes/02-spring-ai-provider.md` 补充可观测性部分
 
 ---
 
-## 交付物 3：模拟面试系统（Skill 出题 → 多轮对话 → 评估 → 导出）
+## 交付物 2：简历分析全链路集成测试
 
-### 链路
+### 核心问题
+
+> "简历分析依赖 S3 上传和 LLM 调用两个外部服务，现有测试只测单个 Service，没有任何测试能验证'上传 → Stream → 消费 → LLM → 落库'的完整异步链路。"
+
+### 工程方案
+
+用 `@SpringBootTest` + `@TestConfiguration` 启动完整 Spring 上下文（含 Redis Stream），Mock S3 和 LLM 两个外部依赖，驱动完整异步链路验证：
 
 ```
-前端 InterviewPage.tsx
-  → GET /api/interview/skills → 10 个方向的 SKILL.md 列表
-  → POST /api/interview/session → 创建会话 + 选择方向
-  → POST /api/interview/question → InterviewQuestionService
-    → 加载 SKILL.md → LLM 出题（历史去重 + JD 适配）
-  → 用户回答 → POST /api/interview/answer
-  → Redis Stream → AnswerEvaluationService
-    → interview-evaluation-*.st Prompt → 结构化输出
-    → 分批评估 → 二次汇总 → 降级兜底
-  → iText 8 PDF 导出
+测试流程:
+1. POST /api/resume/upload → 断言 200 + taskId
+2. 查询 Redis Stream 断言消息已入队
+3. Consumer 拉取消息 → Mock Tika 返回固定文本 → Mock LLM 返回固定分析结果
+4. 断言 ResumeEntity: PENDING → PROCESSING → COMPLETED
+5. 重复上传 → 断言去重逻辑生效
+
+异常场景:
+6. Mock LLM 返回非 JSON → 断言 3 次重试后状态为 FAILED
 ```
 
-### 必读源码
+### 改动范围
 
-| 文件 | 关注点 |
-|------|--------|
-| `modules/interview/InterviewController.java` | 面试会话、出题、回答 API |
-| `modules/interview/InterviewQuestionService.java` | Skill 加载 + 出题逻辑 |
-| `resources/skills/*/SKILL.md` | 10 个面试方向的考察范围定义 |
-| `modules/interview/AnswerEvaluationService.java` | 评估编排 |
-| `common/evaluation/UnifiedEvaluationService.java` | 统一评估引擎（文字+语音共用） |
-| `resources/prompts/interview-question-skill-*.st` | 出题 Prompt |
-| `resources/prompts/interview-evaluation-*.st` | 评估 + 汇总 Prompt |
+| 文件 | 改动 |
+|------|------|
+| `app/build.gradle` | 确认 `spring-boot-starter-test` 依赖 |
+| `app/src/test/` 新增 `ResumeAnalysisIntegrationTest.java` | 核心测试 |
+| `app/src/test/` 新增 `TestConfig.java` | Mock 配置（S3Client + ChatClient） |
 
-### 代码改动目标
+### 预期产出
 
-**新增一个面试 Skill**：在 `resources/skills/` 下创建新方向的 `SKILL.md`（如 Go 后端 / C++ 后端 / DevOps），验证出题内容是否与新定义的方向一致。
-
-改动范围：
-1. `resources/skills/go-backend/SKILL.md`：定义考察范围、难度分布、参考知识库
-2. 必要时在 `resources/skills/_shared/references/` 补充参考知识
-3. 启动后端 → 在前端选择新方向 → 验证出题质量
+1. `./gradlew :app:test --tests ResumeAnalysisIntegrationTest` 全部通过
+2. 笔记：`my-learning/notes/05-redis-stream-async.md` 补充集成测试部分
 
 ---
 
-## 交付物 4：RAG 知识库问答（上传 → 向量化 → 检索 → 流式生成）
+## 交付物 3：RAG 检索质量评估闭环
 
-### 链路
+### 核心问题
 
+> "RAG 问答用 Query Rewrite + pgvector 检索后拼到 LLM，但没人知道检索到的文档片段到底对回答有没有帮助。"
+
+### 工程方案
+
+在 RAG 回答完成后，前端添加 👍/👎 反馈按钮。点击后 POST 到新增评分接口，落库到 `rag_chat_feedback` 表。积累数据后可按知识库、查询类型分析检索质量，反向优化分块策略和 TopK 参数。
+
+### 改动范围
+
+| 文件 | 改动 |
+|------|------|
+| `modules/knowledgebase/model/` 新增 `RagChatFeedbackEntity.java` | 评分实体 |
+| `modules/knowledgebase/repository/` 新增 `RagChatFeedbackRepository.java` | JPA Repository |
+| `modules/knowledgebase/RagChatController.java` | 新增 `POST /api/rag-chat/{messageId}/feedback` |
+| `frontend/src/pages/KnowledgeBaseQueryPage.tsx` | 每条回答下方添加 👍👎 按钮 |
+| `frontend/src/api/ragChat.ts` | 新增 `submitFeedback()` API |
+
+### 数据模型
+
+```sql
+rag_chat_feedback:
+  id, message_id, session_id, knowledge_base_id,
+  rating, comment, query_rewritten, top_k_doc_ids, created_at
 ```
-前端 KnowledgeBaseUploadPage.tsx
-  → POST /api/knowledge-base/upload → S3 存储文档
-  → VectorizeStreamProducer → XADD Redis Stream
-  → VectorizeStreamConsumer.processMessage()
-    → Tika 文本提取 → 分块 (Chunking)
-    → Embedding (DashScope text-embedding-v4, 维度 1024)
-    → pgvector INSERT
-  ↓
-前端 KnowledgeBaseQueryPage.tsx
-  → POST /api/rag-chat/query (SSE)
-  → Query Rewrite (knowledgebase-query-rewrite.st)
-  → Embedding → pgvector 向量检索 (COSINE 距离)
-  → TopK 过滤 + 相似度阈值
-  → Context 拼接 → LLM 流式生成
-  → SSE (SseEmitter) → React Virtuoso 虚拟列表
-```
 
-### 必读源码
+### 预期产出
 
-| 文件 | 关注点 |
-|------|--------|
-| `modules/knowledgebase/KnowledgeBaseController.java` | 知识库管理 API |
-| `modules/knowledgebase/RagChatController.java` | RAG 问答 SSE 端点 |
-| `modules/knowledgebase/KnowledgeBaseVectorService.java` | 向量化逻辑（分块 + Embedding + 存储） |
-| `modules/knowledgebase/KnowledgeBaseQueryService.java` | RAG 检索 + 生成 |
-| `modules/knowledgebase/RagChatSessionService.java` | 多轮对话会话管理 |
-| `resources/prompts/knowledgebase-query-rewrite.st` | Query Rewrite Prompt |
-| `resources/prompts/knowledgebase-query-*.st` | RAG 问答 System/User Prompt |
-| pgvector 配置 (`application.yml`) | 向量维度 1024、COSINE 距离 |
-
-### 代码改动目标
-
-**修改 Query Rewrite Prompt 并观察检索效果变化**：改 `knowledgebase-query-rewrite.st`，上传一份技术文档作为知识库，对比修改前后对同一问题的检索结果差异。
-
-改动范围：
-1. 修改 `knowledgebase-query-rewrite.st`
-2. 上传一份测试文档 → 提问 → 记录检索到的文档片段
-3. 对比对照组 → 评估 Prompt 改动对检索命中率的影响
+1. 前端截图：RAG 回答下方出现评分按钮
+2. DB 中有评分记录
+3. 笔记：`my-learning/notes/04-rag-pipeline.md` 补充质量评估部分
 
 ---
 
-## 交付物 5：异步任务引擎 + 工程化基础设施
+## 交付物 4：Prompt A/B 测试框架
 
-### 链路
+### 核心问题
 
-**异步任务引擎**：
+> "改了一版 Prompt，但不知道新版本比旧版本好还是坏。凭感觉判断不靠谱。"
+
+### 工程方案
+
+实现 `PromptAbTestService`：传入同一个输入、两个版本的 Prompt 模板，并行调用 LLM 获取结果，再用另一个 LLM 调用进行结构化评分（准确性/完整性/相关性三维度），自动选出优胜者。
+
+### 改动范围
+
+| 文件 | 改动 |
+|------|------|
+| `common/ai/` 新增 `PromptAbTestService.java` | A/B 测试核心逻辑 |
+| `resources/prompts/prompt-ab-evaluation.st` | 评分 Prompt 模板 |
+| `common/ai/` 新增 `PromptAbTestRequest.java` / `PromptAbTestResult.java` | record 定义 |
+
+### 核心方法
+
+```java
+public PromptAbTestResult compare(
+    String input,
+    String promptTemplateA, String promptTemplateB,
+    String abEvaluationPrompt
+) {
+    // 1. 并行调用两版 Prompt
+    var fA = CompletableFuture.supplyAsync(() -> chatClient.call(templateA, input));
+    var fB = CompletableFuture.supplyAsync(() -> chatClient.call(templateB, input));
+    var outA = fA.join(); var outB = fB.join();
+
+    // 2. LLM 三维度评分
+    var scores = structuredOutputInvoker.invoke(abEvaluationPrompt,
+        Map.of("input", input, "outputA", outA, "outputB", outB), AbScores.class);
+
+    // 3. 返回对比结论
+    return new PromptAbTestResult(outA, outB, scores,
+        scores.total(A) > scores.total(B) ? "A" : "B");
+}
 ```
-业务触发 → Producer.send() → XADD Stream
-  → Consumer 轮询 (XREADGROUP) → processMessage()
-  → 成功 → XACK
-  → 失败 → retry < 3 → 重新投递   /   retry >= 3 → FAILED
-  → 消费前校验：实体已删除 → 直接 ACK 丢弃
-```
 
-**工程化基础设施**：
-```
-@RateLimit → RateLimitAspect → Redis Lua 滑动窗口
-PromptSanitizer → 输入校验 → 防止注入
-配置分层：.env → application.yml → @ConfigurationProperties
-全局限流 / API Key 加密 / CORS / 内容安全
-```
+### 预期产出
 
-### 必读源码
+1. 选一个已有 Prompt（如简历分析），写对照版本，跑 A/B 测试
+2. 输出：A 版得分 / B 版得分 / 优胜者
+3. 笔记：`my-learning/notes/03-unified-evaluation.md` 补充 A/B 测试部分
 
-| 文件 | 关注点 |
-|------|--------|
-| `common/async/AbstractStreamProducer.java` | 生产者模板 |
-| `common/async/AbstractStreamConsumer.java` | 消费者模板（确认/重试/死信） |
-| `common/annotation/RateLimit.java` | 可重复限流注解 |
-| `common/aspect/RateLimitAspect.java` | Redis Lua 滑动窗口切面 |
-| `common/ai/PromptSanitizer.java` | Prompt 注入防护 |
-| `common/config/` 下的配置类 | `@ConfigurationProperties` 实践 |
-| `common/exception/` | `BusinessException` + `GlobalExceptionHandler` |
+---
 
-### 代码改动目标
+## 交付物 5：语音面试延迟诊断
 
-**为 `StructuredOutputInvoker` 编写单元测试**：覆盖正常解析、JSON 格式异常强制修复、超过最大重试次数后降级返回三种场景。
+### 核心问题
 
-改动范围：
-1. `app/src/test/` 下新增测试类
-2. Mock `ChatClient` 返回不同质量的 JSON
-3. 验证重试计数器和降级逻辑
+> "项目已知端到端延迟偏高，但不知道是哪一段慢——ASR 慢？LLM 生成慢？TTS 合成慢？没有分阶段数据，没法精准优化。"
+
+### 工程方案
+
+在语音面试的三个关键节点利用项目已有的 Micrometer 加 `@Timed` 埋点：
+
+| 埋点位置 | 指标名 | 测量内容 |
+|----------|--------|----------|
+| `QwenAsrService.transcribe()` | `voice.asr.duration` | 单句语音识别耗时 |
+| `DashscopeLlmService.generate()` | `voice.llm.duration` | LLM 生成回答耗时 |
+| `QwenTtsService.synthesize()` | `voice.tts.duration` | 单句 TTS 合成耗时 |
+| `VoiceInterviewWebSocketHandler` | `voice.e2e.duration` | 用户说完 → 开始播放端到端延迟 |
+
+### 改动范围
+
+| 文件 | 改动 |
+|------|------|
+| `modules/voiceinterview/QwenAsrService.java` | 加 `@Timed("voice.asr")` |
+| `modules/voiceinterview/QwenTtsService.java` | 加 `@Timed("voice.tts")` |
+| `modules/voiceinterview/DashscopeLlmService.java` | 加 `@Timed("voice.llm")` |
+| `modules/voiceinterview/VoiceInterviewWebSocketHandler.java` | 加端到端 Timer |
+
+### 预期产出
+
+1. 完成语音面试 → 访问 `/actuator/metrics` 拉取各段延迟数据
+2. 输出延迟分布：ASR / LLM / TTS 各段的 avg / p95 / p99
+3. 瓶颈结论 + 改善建议
+4. 笔记：`my-learning/notes/06-voice-interview.md` 补充延迟诊断部分
+
+---
+
+## 交付物 6：SSE 断连自动重连 + 断点续传
+
+### 核心问题
+
+> "知识库问答采用 SSE 流式输出，但网络闪断后 `EventSource` 直接中断，前端没有任何恢复逻辑，用户只能刷新页面重来，已回答内容全部丢失。"
+
+### 工程方案
+
+**后端**：RagChat SSE 端点支持 `Last-Event-ID` 请求头，识别断点后从对应位置继续推送。
+
+**前端**：抽取通用 `useSSE` Hook，实现：
+- `EventSource` 原生 `Last-Event-ID` 自动续传
+- Exponential Backoff 重连：1s → 2s → 4s → 8s → 16s（上限）
+- 已渲染消息保持显示，重连成功后追加新内容
+- 超最大重试次数后弹提示
+
+### 改动范围
+
+| 文件 | 改动 |
+|------|------|
+| `modules/knowledgebase/RagChatController.java` | SSE 支持 `Last-Event-ID` 断点续推 |
+| `frontend/src/hooks/` 新增 `useSSE.ts` | 通用 SSE Hook（含重连 + 续传） |
+| `frontend/src/api/ragChat.ts` | 从内联 `EventSource` 切换到 `useSSE` |
+| `frontend/src/pages/KnowledgeBaseQueryPage.tsx` | 重连状态提示 UI |
+
+### 预期产出
+
+1. 断网 → 前端显示"重连中…" → 恢复 → 自动续传，之前内容不丢失
+2. Chrome DevTools Network 截图：`Last-Event-ID` 衔接
+3. 笔记：`my-learning/notes/04-rag-pipeline.md` 补充 SSE 可靠性部分
 
 ---
 
 ## 笔记索引
 
 ```
-交付物 0 → my-learning/code-changes/00-env-setup/ + my-learning/notes/01-env-setup.md
-交付物 1 → my-learning/notes/02-spring-ai-provider.md + my-learning/notes/03-unified-evaluation.md
-交付物 2 → my-learning/notes/05-redis-stream-async.md
-交付物 3 → my-learning/notes/03-unified-evaluation.md
-交付物 4 → my-learning/notes/04-rag-pipeline.md
-交付物 5 → my-learning/notes/05-redis-stream-async.md
+交付物 0 → my-learning/code-changes/00-env-setup/ + my-learning/notes/01-env-setup.md ✅
+交付物 1 → my-learning/notes/02-spring-ai-provider.md + my-learning/code-changes/01-llm-observability/
+交付物 2 → my-learning/notes/05-redis-stream-async.md  + my-learning/code-changes/02-resume-integration-test/
+交付物 3 → my-learning/notes/04-rag-pipeline.md        + my-learning/code-changes/03-rag-feedback-loop/
+交付物 4 → my-learning/notes/03-unified-evaluation.md  + my-learning/code-changes/04-prompt-ab-test/
+交付物 5 → my-learning/notes/06-voice-interview.md     + my-learning/code-changes/05-voice-latency-diagnosis/
+交付物 6 → my-learning/notes/04-rag-pipeline.md        + my-learning/code-changes/06-sse-reconnect/
+```
+
+---
+
+## 推荐执行顺序
+
+```
+前端优势（先做）:              通用能力（第二波）:           深层积累（第三波）:
+──────────────────────     ──────────────────────      ──────────────────────
+⑥ SSE 断连自动重连         ① LLM 调用可观测性          ② 简历分析全链路集成测试
+（前端 Hook + 后端小改）    （Micrometer 不引入新库）    （Spring Test + Mock 体系）
+
+                           ③ RAG 检索质量评估闭环       ④ Prompt A/B 测试框架
+                           （全栈改动，前后端联动）      （策略模式 + 抽象设计）
+
+                           ⑤ 语音面试延迟诊断
+                           （埋点 + 数据分析）
 ```
