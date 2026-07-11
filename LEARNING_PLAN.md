@@ -289,7 +289,7 @@ public PromptAbTestResult compare(
 
 ---
 
-## 推荐执行顺序
+## 计划执行顺序
 
 ```
 前端优势（先做）:              通用能力（第二波）:           深层积累（第三波）:
