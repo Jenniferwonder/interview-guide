@@ -1,7 +1,10 @@
-# 🎯 InterviewGuide 源码精读 — 从前端到 AI 全栈
+# 🎯 interview-guide 源码精读 — 从前端到 AI 全栈
 
-> 精读 [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)
-> 源码，以**业务链路为线索**追踪 Spring AI + RAG + 异步任务的全栈工程实践。
+> Forked from [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)
+> —— 一个集成了简历分析、模拟面试、RAG 知识库和实时语音的智能面试平台。
+>
+> 以**业务链路为线索**追踪 Spring AI + RAG + 异步任务的全栈工程实践，
+> 通过实际的**代码改动**来验证每条链路的技术设计。
 
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-green?logo=springboot)](https://spring.io/projects/spring-boot)
@@ -14,10 +17,12 @@
 
 ## 📖 我在做什么
 
-这是一个**代码动手项目**。我 fork 了 InterviewGuide（基于大语言模型的智能面试平台），通过实际改代码、写测试、修配置来理解 Spring AI + RAG 工程实践，并输出：
+这是我对 [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide) 的**学习型 fork**。
 
-- 🛠️ **代码改动**：新增 Provider / 新增 Skill / 修改 Prompt 模板（git diff 可追溯）
-- 📝 **支撑笔记**：每个改动的源码分析和设计思路
+我将项目拆解为 **6 个交付物**——环境搭建、LLM 集成层、简历分析链路、面试系统链路、RAG 知识库链路、异步引擎+工程化基础设施——每个交付物追踪一条从前端页面到后端数据库的**完整业务链路**，并通过实际改代码（新增 Provider / 新增 Skill / 修改 Prompt / 写测试）来验证理解，输出：
+
+- 🛠️ **代码改动**：可追溯的 git diff，证明"我改过且能跑通"
+- 📝 **支撑笔记**：每个改动对应的源码分析和设计思路
 - 🐛 **踩坑记录**：环境搭建中的实际问题诊断与修复过程
 
 ---
