@@ -1,7 +1,7 @@
-# 🎯 InterviewGuide 源码精读 — Spring AI + RAG 全栈项目学习
+# 🎯 InterviewGuide 源码精读 — 从前端到 AI 全栈
 
 > 精读 [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)
-> 源码，深入理解 Spring AI 集成、RAG 检索增强、异步任务编排与实时语音通信的工程实践。
+> 源码，以**业务链路为线索**追踪 Spring AI + RAG + 异步任务的全栈工程实践。
 
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-green?logo=springboot)](https://spring.io/projects/spring-boot)
@@ -14,64 +14,107 @@
 
 ## 📖 我在做什么
 
-这是一个**代码精读项目**。我 fork 了 InterviewGuide（一个基于大语言模型的智能面试平台），逐模块分析其架构设计、AI 集成方式、工程化实践，并输出：
+这是一个**代码动手项目**。我 fork 了 InterviewGuide（基于大语言模型的智能面试平台），通过实际改代码、写测试、修配置来理解 Spring AI + RAG 工程实践，并输出：
 
-- 📝 **学习笔记**：每个核心模块的设计思路和关键代码分析
-- 📊 **架构图**：核心链路的时序图和数据流图
-- 🛠️ **代码验证**：动手验证关键设计（如新增 Provider、修改 Prompt 模板）
+- 🛠️ **代码改动**：新增 Provider / 新增 Skill / 修改 Prompt 模板（git diff 可追溯）
+- 📝 **支撑笔记**：每个改动的源码分析和设计思路
+- 🐛 **踩坑记录**：环境搭建中的实际问题诊断与修复过程
 
 ---
 
 ## 🗺️ 学习路线
 
-| 阶段 | 主题 | 产出 | 状态 |
-|------|------|------|------|
-| Day 1 | 环境搭建 + 架构概览 | Docker Compose / DataGrip / pgvector 配置 | 🔄 |
-| Day 2 | AI 核心链路 | 多 Provider 管理 / 结构化输出 / Prompt 工程 | 🔄 |
-| Day 3 | RAG + 异步 + 语音 | pgvector 检索 / Redis Stream / WebSocket 语音 | 🔄 |
-| Day 4 | 工程化实践 | 限流 / 安全 / 架构决策 | ⬜ |
-| Day 5 | 查缺补漏 | 全链路走读 + 知识体系梳理 | ⬜ |
+> 按项目的**三大核心功能 + 两大技术亮点**组织，每个交付物追踪一条完整的从前端到后端的业务链路。
 
-详细计划 → [LEARNING_PLAN.md](LEARNING_PLAN.md)
+| # | 交付物 | 链路范围 | 覆盖技术 | 状态 |
+|---|--------|----------|----------|:--:|
+| 0 | 本地环境一键启动 | 基础设施 | Docker Compose · PG+pgvector · Redis · RustFS → [📝](my-learning/notes/01-env-setup.md) | ✅ |
+| 1 | 多 LLM Provider + 结构化输出 | LLM 集成层 | `LlmProviderRegistry` · `StructuredOutputInvoker` · API Key 加密 · Prompt 模板 → [📝](my-learning/notes/02-spring-ai-provider.md) [📝](my-learning/notes/03-unified-evaluation.md) | 🔄 |
+| 2 | 智能简历分析 | 上传 → 解析 → AI 评分 → 报告导出 | Tika · Redis Stream 异步 · S3 存储 · iText 8 PDF → [📝](my-learning/notes/05-redis-stream-async.md) | ⬜ |
+| 3 | 模拟面试系统 | Skill 出题 → 多轮对话 → 评估 → PDF 导出 | Skill 驱动 · Prompt 工程 · 统一评估引擎 · iText 8 → [📝](my-learning/notes/03-unified-evaluation.md) | ⬜ |
+| 4 | RAG 知识库问答 | 文档上传 → 向量化 → 检索 → 流式生成 | pgvector · Query Rewrite · COSINE 检索 · SSE → [📝](my-learning/notes/04-rag-pipeline.md) | ⬜ |
+| 5 | 异步任务引擎 + 工程化基础设施 | 系统横切面 | Redis Stream 模板 · `@RateLimit` · `PromptSanitizer` · 配置分层 → [📝](my-learning/notes/05-redis-stream-async.md) | ⬜ |
+
+→ 详细说明见 [LEARNING_PLAN.md](LEARNING_PLAN.md)
 
 ---
 
-## 🧠 核心收获（持续更新）
+## 🧠 核心收获
 
-### ⚙️ Day 1：环境搭建 + 架构概览
+### 交付物 1：多 LLM Provider + 结构化输出
 
-| # | 主题 | 笔记 | 关键收获 |
-|---|------|------|----------|
-| 1 | 本地环境搭建 | [📝](my-learning/notes/01-env-setup.md) | Docker Compose 一键启动 PG+pgvector+Redis+RustFS |
+追踪 `LlmProviderRegistry` → `StructuredOutputInvoker` → Prompt 模板的完整调用链，理解"新增一个 LLM Provider 不需要改业务代码"的底层实现：
 
-### 🧩 Day 2：AI 核心链路
+- 运行时 Provider 发现与 ChatClient 缓存机制
+- 结构化输出的重试策略：LLM 返回非 JSON → 错误注入 Prompt → 让 LLM 自己修正
+- API Key 加密落盘至 `~/.interview-guide/`，运行时动态加载
 
-| # | 主题 | 笔记 | 关键收获 |
-|---|------|------|----------|
-| 2 | Spring AI 多 Provider 管理 | [📝](my-learning/notes/02-spring-ai-provider.md) | 策略模式 + 动态切换 + 结构化输出 |
-| 3 | 统一评估引擎 | [📝](my-learning/notes/03-unified-evaluation.md) | 分批评估 + 二次汇总 + 降级兜底 |
+### 交付物 2：智能简历分析（全链路）
 
-### 🔗 Day 3：RAG + 异步 + 语音
+从 `UploadPage.tsx` 出发，追踪一次简历上传到分析报告生成的完整过程：
 
-| # | 主题 | 笔记 | 关键收获 |
-|---|------|------|----------|
-| 4 | RAG 检索增强全链路 | [📝](my-learning/notes/04-rag-pipeline.md) | 文档→向量→检索→生成全链路 |
-| 5 | Redis Stream 异步任务 | [📝](my-learning/notes/05-redis-stream-async.md) | 生产者/消费者模板 + 重试 + 死信 |
-| 6 | 实时语音通信 | [📝](my-learning/notes/06-voice-interview.md) | WebSocket + VAD + 并发 TTS |
+```
+UploadPage → ResumeController → S3 上传 → Redis Stream (XADD)
+  → AnalyzeConsumer (XREADGROUP) → Tika 文本提取
+  → LlmProviderRegistry.getChatClient() → Prompt 模板 → LLM 分析
+  → 结果落库 → 前端轮询 → AnalysisPanel 展示 → iText 8 PDF 导出
+```
 
-→ 更多笔记见 [my-learning/notes/](my-learning/notes/)
+关键认知：异步任务**不在事务内调用 LLM**，事务只覆盖 DB 状态更新，LLM 调用在事务外通过 Redis Stream 解耦。
+
+### 交付物 3：模拟面试系统
+
+从 Skill 选择到评估报告生成的完整链路：
+
+```
+SKILL.md 加载 → InterviewQuestionService 出题（历史去重 + JD 适配）
+  → 多轮对话 → UnifiedEvaluationService（分批评估 + 二次汇总）
+  → StructuredOutputInvoker（JSON Schema 约束输出）
+  → iText 8 PDF 导出
+```
+
+关键认知：文字面试和语音面试共用同一套评估引擎，差异仅在于输入来源——ASR 转写 vs 文本输入。
+
+### 交付物 4：RAG 知识库问答
+
+从文档上传到流式回答的全链路，覆盖 pgvector 向量检索的核心实践：
+
+```
+文档上传 → Tika 解析 → 文本分块 → Embedding (DashScope text-embedding-v4)
+  → pgvector 存储 (1024 维 · COSINE 距离)
+  → 用户提问 → Query Rewrite → Embedding → 向量检索 → TopK+阈值过滤
+  → Context 拼接 → LLM 生成 → SSE 流式输出 → React Virtuoso 虚拟列表渲染
+```
+
+关键认知：向量存储为什么选 pgvector 而不是独立向量库——一套 PG 同时处理关系数据和向量数据，精简运维。
+
+### 交付物 5：异步任务引擎 + 工程化基础设施
+
+系统横切面的工程化能力，覆盖两个方向：
+
+**异步任务引擎**：
+- `AbstractStreamProducer<T>` / `AbstractStreamConsumer<T>` 模板化设计
+- 消费失败最多重试 3 次，超过标记 FAILED
+- 消费前校验实体存在性，已删除直接 ACK 丢弃
+- Pending 消息定时恢复机制
+
+**工程化基础设施**：
+- 可重复 `@RateLimit` 注解（Global / IP / User 维度），基于 Redis Lua 滑动窗口
+- `PromptSanitizer` 防止 Prompt 注入攻击
+- 配置分层：`.env` → `application.yml` → `@ConfigurationProperties`
+- 全局限流 + API Key 加密 + CORS + 内容安全校验
 
 ---
 
 ## 📂 目录说明
 
 ```
-├── README.md              👈 你正在看的页面（学习产出首页）
-├── LEARNING_PLAN.md       详细 5 天学习计划
-├── my-learning/           学习产出
-│   ├── notes/             学习笔记（按模块）
-│   ├── diagrams/          架构图 / 时序图
-│   └── code-changes/      代码验证 / 改动
+├── README.md              👈 学习产出首页
+├── LEARNING_PLAN.md       各交付物的源码追踪计划和改动指南
+├── my-learning/
+│   ├── notes/             支撑笔记（按交付物引用）
+│   ├── code-changes/      代码改动（git diff 可追溯）
+│   └── demos/             独立可运行示例（可选）
 │
 ├── app/                   原项目后端源码（Spring Boot）
 ├── frontend/              原项目前端源码（React）
@@ -86,17 +129,14 @@
 ## 🔄 同步策略
 
 ```bash
-# 从原仓库拉取最新代码（不影响学习产出分支）
-git checkout master && git pull upstream master
-
-# 将上游更新合并到学习分支
-git checkout my-learning && git merge master
+git checkout master && git pull upstream master          # 从原仓库拉取最新代码
+git checkout my-learning && git merge master             # 将上游更新合并到学习分支
 ```
 
 ---
 
 ## 🙋 关于我
 
-在职前端开发，日常工作以 React + TypeScript 为主。正在向 AI 全栈方向扩展能力边界，通过精读 Spring AI + RAG 项目源码，补齐后端架构和 LLM 工程化落地的认知拼图。
+在职前端开发，日常工作以 React + TypeScript 为主。正在向 AI 全栈方向扩展能力边界——通过精读 Spring AI + RAG 项目源码，追踪从前端页面到后端数据库的完整业务链路，补齐后端架构和 LLM 工程化落地的认知拼图。
 
-*最后更新：2026.07.10*
+*最后更新：2026.07.11*
