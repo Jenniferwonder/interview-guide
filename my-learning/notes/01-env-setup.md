@@ -251,28 +251,105 @@ cp .env.example .env
 
 ---
 
-## 7. 验证环境
+## 7. 前后端启动实录
 
-全部启动后验证：
+> 环境：Windows 11 / Docker Desktop 29.6.1 / Java 21 (Temurin) / Node 24.18.0
+
+### 7.1 启动前检查
 
 ```powershell
-# 1. 容器运行状态
+# Docker 容器状态
 docker compose -f docker-compose.dev.yml ps
+# NAME                 STATE     HEALTH
+# interview-postgres   running   healthy
+# interview-redis      running   healthy
+# interview-rustfs     running   unhealthy (Alpine 兼容问题, API 正常)
 
-# 2. PostgreSQL 连通性
-docker exec interview-postgres pg_isready -U postgres
+# Java 版本
+"C:\Users\amazi\scoop\apps\temurin21-jdk\current\bin\java" -version
+# openjdk version "21.0.11" 2026-04-21 LTS
 
-# 3. 后端编译（Gradle 自动下载依赖）
-./gradlew :app:compileJava
-
-# 4. 启动后端（依赖 .env 中的 API Key）
-./gradlew :app:bootRun
-
-# 5. 启动前端（另开终端）
-cd frontend && pnpm install && pnpm run dev
+# Node 版本
+node --version  # v24.18.0
 ```
 
-浏览器访问 `http://localhost:5173`，能看到首页即环境搭建成功。
+### 7.2 启动后端
+
+使用 Scoop 安装的 Temurin21 JDK（系统默认 Java 8 不兼容），通过 `NO_PROXY` 排除本地地址防止代理拦截 S3 请求：
+
+```bash
+export JAVA_HOME="C:/Users/amazi/scoop/apps/temurin21-jdk/current"
+export NO_PROXY="localhost,127.0.0.1,::1"
+export no_proxy="localhost,127.0.0.1,::1"
+cd /e/SynologyDrive/Codespace/interview-guide
+./gradlew :app:bootRun --no-daemon
+```
+
+### 7.3 遇到的问题及解决
+
+#### 问题 1：端口 8080 被占用
+
+**现象**：
+```
+Web server failed to start. Port 8080 was already in use.
+```
+
+**诊断**：`Get-NetTCPConnection -LocalPort 8080` 发现 PID 7908 为系统进程 `AgentService`，`taskkill /F` 拒绝访问。
+
+**解决**：改用端口 8082：
+```bash
+export SERVER_PORT=8082
+./gradlew :app:bootRun --no-daemon
+```
+
+#### 问题 2：TTS 预热失败（非阻塞）
+
+**现象**：`TTS synthesis interrupted` 连续报错，DashScope TTS 连接 `wss://dashscope.aliyuncs.com` 失败。
+
+**根因**：`.env` 中 `AI_BAILIAN_API_KEY` 未配置真实 Key。
+
+**结论**：不影响核心功能启动。预热线程被 InterruptedException 打断后 Spring Boot 继续初始化剩余 beans，最终 `Started App in 14.3 seconds`，10 个 Skill 全部加载，4 个 Redis Stream Consumer 正常启动。
+
+### 7.4 启动前端
+
+后端端口变更后需对齐 Vite proxy 目标：
+
+```powershell
+cd frontend
+$env:VITE_API_PROXY_TARGET = "http://localhost:8082"
+pnpm run dev
+# VITE v5.4.21  ready in 694 ms
+# ➜  Local:   http://localhost:5173/
+```
+
+### 7.5 运行状态确认
+
+| 服务 | 端口 | 状态 |
+|------|------|:--:|
+| PostgreSQL + pgvector | 5432 | ✅ healthy |
+| Redis | 6379 | ✅ healthy |
+| RustFS | 9000 / 9001 | ✅ running |
+| Spring Boot 后端 | 8082 | ✅ Started in 14.3s |
+| Vite 前端 | 5173 | ✅ ready in 694ms |
+
+关键日志：
+```
+Tomcat started on port 8082 (http) with context path '/'
+共加载 10 个预设 Skill
+存储桶已存在: interview-guide
+Redisson: 10 connections initialized for localhost/127.0.0.1:6379
+analyze / evaluate / vectorize / voice-evaluate 4 个 Consumer 全部 started
+```
+
+### 7.6 访问入口
+
+| 入口 | URL |
+|------|-----|
+| 前端页面 | http://localhost:5173 |
+| 后端 API | http://localhost:8082 |
+| Swagger UI | http://localhost:8082/swagger-ui.html |
+| Actuator | http://localhost:8082/actuator |
+| RustFS Console | http://localhost:9001 |
 
 ---
 
