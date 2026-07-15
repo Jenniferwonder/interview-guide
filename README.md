@@ -1,10 +1,10 @@
-# 🎯 interview-guide 源码精读 — 从前端到 AI 全栈
+# 🎯 AI 面试平台工程实践 —— 从前端到 AI 全栈的 7 个工程级交付
 
 > Forked from [Snailclimb/interview-guide](https://github.com/Snailclimb/interview-guide)
 > —— 一个集成了简历分析、模拟面试、RAG 知识库和实时语音的智能面试平台。
 >
-> 以**业务链路为线索**追踪 Spring AI + RAG + 异步任务的全栈工程实践，
-> 通过有深度的**工程级代码改动**来验证每条链路的技术设计。
+> 不止是跑通：以**业务链路为线索**，用 7 个可追溯的**工程级代码改动**，
+> 验证 Spring AI + RAG + 异步任务 + 实时语音的每一处技术设计。
 
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-green?logo=springboot)](https://spring.io/projects/spring-boot)
@@ -124,5 +124,3 @@ git checkout my-learning && git merge master             # 将上游更新合并
 ## 🙋 关于我
 
 在职前端开发，日常工作以 React + TypeScript 为主。正在向 AI 全栈方向扩展能力边界——以这个 Spring AI + RAG 全栈项目为载体，通过有深度的工程改动（可观测性、集成测试、A/B 测试、延迟诊断、SSE 重连）来构建从前端到后端、从业务代码到基础设施的完整认知。
-
-*最后更新：2026.07.11*
