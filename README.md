@@ -42,7 +42,7 @@
 | 5 | 语音面试延迟诊断 | 端到端延迟偏高的瓶颈到底在哪一段？ | ASR/TTS/LLM 三段分别埋点 + 瓶颈定位报告 → [📝](my-learning/notes/06-voice-interview.md) | ⬜ |
 | 6 | SSE 断连自动重连 | 网络闪断导致回答丢失怎么办？ | Exponential Backoff + Last-Event-ID + 断点续传 → [📝](my-learning/notes/04-rag-pipeline.md) | ⬜ |
 
-→ 详细追踪计划见 [LEARNING_PLAN.md](LEARNING_PLAN.md)
+→ 详细追踪计划见 [LEARNING_PLAN.md](my-learning/LEARNING_PLAN.md)
 
 ---
 

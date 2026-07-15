@@ -26,3 +26,6 @@ GEMINI.md
 .playwright-mcp/
 /.agents
 skills-lock.json
+
+#Ignore custom claude rules
+.claude/rules/learning.md

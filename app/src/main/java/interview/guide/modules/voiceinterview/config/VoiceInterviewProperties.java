@@ -51,6 +51,12 @@ public class VoiceInterviewProperties {
      * 单句 TTS 合成超时（秒），超时后跳过该句，用已成功的句子拼合音频。
      */
     private int ttsTimeoutSeconds = 8;
+    /**
+     * 是否在应用启动时预热开场白 TTS 音频缓存。
+     * 开启后启动即调用云端 TTS 合成，消耗 API 额度并延长后台预热耗时；
+     * 开发环境默认关闭，生产可开启以降低首句语音延迟。
+     */
+    private boolean warmupOpeningAudioEnabled = false;
 
     @Data
     public static class PhaseConfig {

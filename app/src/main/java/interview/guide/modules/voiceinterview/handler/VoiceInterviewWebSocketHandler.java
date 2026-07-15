@@ -107,6 +107,11 @@ public class VoiceInterviewWebSocketHandler extends TextWebSocketHandler impleme
 
     @PostConstruct
     void warmupOpeningAudioCache() {
+        if (!voiceInterviewProperties.isWarmupOpeningAudioEnabled()) {
+            log.info("Opening audio cache warmup disabled; skipping startup TTS synthesis "
+                + "(set app.voice-interview.warmup-opening-audio-enabled=true to enable)");
+            return;
+        }
         voicePipelineExecutor.execute(() -> {
             try {
                 VoiceInterviewProperties.OpeningConfig opening = voiceInterviewProperties.getOpening();

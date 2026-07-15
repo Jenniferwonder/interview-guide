@@ -7,7 +7,7 @@ logging:
     file: UTF-8
 
 server:
-  port: 8080
+  port: 8082
   # 明确指定HTTP响应编码
   servlet:
     encoding:
@@ -62,7 +62,7 @@ spring:
 
   # Redisson配置 (使用 spring.redis.redisson，参考官方文档)
   redis:
-    redisson:
+    redisson:  
       config: |
         singleServerConfig:
           address: "redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}"
@@ -71,6 +71,13 @@ spring:
           connectionPoolSize: 64
           subscriptionConnectionMinimumIdleSize: 1
           subscriptionConnectionPoolSize: 50
+
+  # 关闭 Spring Data Redis 仓库扫描：本项目 Redis 仅用于 Redisson（缓存/锁/Stream），
+  # 所有 Repository 都是 JPA。关掉后可消除启动时的 "Could not safely identify store assignment" 提示。
+  data:
+    redis:
+      repositories:
+        enabled: false
   
   # Spring AI 配置（chat + embedding 统一由 app.ai.providers 驱动，不使用自动配置）
   ai:
@@ -185,8 +192,8 @@ app:
   # RustFS (S3兼容) 存储配置
   storage:
     endpoint: ${APP_STORAGE_ENDPOINT:http://localhost:9000}
-    access-key: ${APP_STORAGE_ACCESS_KEY:}
-    secret-key: ${APP_STORAGE_SECRET_KEY:}
+    access-key: ${APP_STORAGE_ACCESS_KEY}
+    secret-key: ${APP_STORAGE_SECRET_KEY}
     bucket: ${APP_STORAGE_BUCKET:interview-guide}
     region: ${APP_STORAGE_REGION:us-east-1}
     api-call-timeout: ${APP_STORAGE_API_CALL_TIMEOUT:60s}
@@ -270,6 +277,8 @@ app:
     ai-question-max-chars: ${APP_VOICE_AI_QUESTION_MAX_CHARS:120}
     # 是否按句子边合成边推送语音；开启后首段语音不用等待完整回复生成结束
     chunked-audio-enabled: ${APP_VOICE_CHUNKED_AUDIO_ENABLED:true}
+    # 是否在启动时预热开场白 TTS 音频缓存（会调用云端 TTS 消耗额度）；开发默认关闭，生产可置 true 降低首句语音延迟
+    warmup-opening-audio-enabled: ${APP_VOICE_INTERVIEW_WARMUP_OPENING_AUDIO_ENABLED:false}
     # 单句 TTS 合成超时，避免某一句卡住整轮播放
     tts-timeout-seconds: ${APP_VOICE_TTS_TIMEOUT_SECONDS:8}
     # 单会话并发 TTS 上限，控制首段语音速度和服务连接压力
