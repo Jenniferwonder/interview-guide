@@ -310,6 +310,112 @@ export SERVER_PORT=8082
 
 **结论**：不影响核心功能启动。预热线程被 InterruptedException 打断后 Spring Boot 继续初始化剩余 beans，最终 `Started App in 14.3 seconds`，10 个 Skill 全部加载，4 个 Redis Stream Consumer 正常启动。
 
+**后续优化**：开发环境默认关闭启动预热，避免每次 `bootRun` 都打云端 TTS。配置项 `app.voice-interview.warmup-opening-audio-enabled`（默认 `false`），详见 [06 实时语音面试](06-voice-interview.md)。
+
+#### 问题 3：6379 被老 Redis 占用（XAUTOCLAIM 报错）
+
+**现象**：后端启动报 `org.redisson.client.RedisException: ERR unknown command 'XAUTOCLAIM'`。Docker 里 `redis:7` 已是 7.4.9，看似矛盾。
+
+**诊断**（必须在**宿主机**执行，不要只信 `docker exec`）：
+
+```powershell
+# 宿主机连 6379 的真实版本
+redis-cli -h 127.0.0.1 -p 6379 info server | findstr redis_version
+
+# 是否支持 XAUTOCLAIM（空数组 = 不支持）
+redis-cli -h 127.0.0.1 -p 6379 command info xautoclaim
+
+# 谁占用了 6379
+netstat -ano | findstr :6379
+```
+
+**根因**：本机另有老 Redis（常见为 Windows 服务 / Memurai / 其它安装）抢占了 `localhost:6379`。应用配置默认连 `redis://localhost:6379`，实际连到了旧实例；`XAUTOCLAIM` 需 Redis ≥ 6.2。`docker exec interview-redis ...` 只能证明**容器内**版本，不能证明 app 连的是它。
+
+**解决**：停掉本机老 Redis，让 Docker 容器独占 6379；或把容器映射改为 `6380:6379` 并设置 `REDIS_PORT=6380`。机制说明见 [05 Redis Stream](05-redis-stream-async.md)。
+
+#### 问题 4：`scoop reset temurin21-jdk` 后 `java -version` 仍是 8
+
+**现象**：`JAVA_HOME` 已指向 Scoop 的 Temurin 21，但 `java -version` 仍显示 Amazon Corretto 8。
+
+**诊断**：
+
+```powershell
+where.exe java
+echo $env:JAVA_HOME
+java -version
+```
+
+典型结果：PATH 首位是 sdkman / 其它路径下的 Corretto 8，Scoop 的 21 排在后面。
+
+**根因**：CMD/PowerShell 找 `java` 命令只看 **PATH 先后顺序**，不看 `JAVA_HOME`。`scoop reset` 会更新 Scoop 的 `JAVA_HOME` / current 链接，挡不住 PATH 前面的旧 JDK。
+
+**解决**：从用户/系统 PATH 中删除或后移 sdkman Corretto 的 `bin`；保证 `scoop\shims` 或 Temurin 21 的 `bin` 靠前；**关掉终端再开新窗口**使 PATH 生效。Scoop 与 sdkman 不要同时往 PATH 最前面塞 JDK。
+
+#### 问题 5：Windows 上 `./gradlew` 报错 / bootRun「卡在 80%」
+
+**现象 1**：
+
+```text
+'.' is not recognized as an internal or external command
+```
+
+**根因**：CMD 不支持 Unix 风格的 `./`。
+
+**解决**（PowerShell / CMD）：
+
+```powershell
+.\gradlew.bat :app:bootRun
+# 或
+gradlew.bat :app:bootRun --no-daemon
+```
+
+**现象 2**：Gradle 进度条长期停在 `80% EXECUTING :app:bootRun`。
+
+**根因**：`bootRun` 是常驻任务，应用不退出则任务不算「完成」，进度不会到 100%。看到 `Started App in ... seconds` / Tomcat 端口已监听即表示启动成功。
+
+#### 问题 6：Gradle Daemon 堆积
+
+**现象**：`Starting a Gradle Daemon, 4 busy Daemons could not be reused`。
+
+**根因**：多次 `bootRun` 未退出，Daemon 一直 BUSY，无法复用，于是再起新 Daemon，占内存。
+
+**解决**：
+
+```powershell
+.\gradlew.bat --status   # 查看 IDLE / BUSY
+.\gradlew.bat --stop     # 停掉所有 Daemon
+# 调试启动问题时可用
+.\gradlew.bat :app:bootRun --no-daemon
+```
+
+#### 问题 7：中文日志乱码（UTF-8 vs GBK）
+
+**现象**：应用日志里中文变成 `鍔犺浇棰勮` 一类乱码，英文正常。
+
+**根因**：`application.yml` 中 `logging.charset.console: UTF-8`，JVM 输出 UTF-8；Windows 终端默认代码页常为 **936（GBK）**，按 GBK 解码 UTF-8 字节即乱码。
+
+**解决**：新开终端会话使用 UTF-8（本机已通过 PowerShell profile + CMD AutoRun `chcp 65001` 配置）。验证：
+
+```powershell
+chcp   # 期望 Active code page: 65001
+```
+
+#### 问题 8：Spring Data Redis「Could not safely identify store assignment」
+
+**现象**：启动时对每个 JPA Repository 打出 INFO：`Spring Data Redis - Could not safely identify store assignment...`，最后 `Found 0 Redis repository interfaces`。
+
+**根因**：同时存在 Spring Data JPA 与 Spring Data Redis 时进入严格仓库模式；Redis 模块扫描全部 Repository，发现无 `@RedisHash` 后跳过并打 INFO。功能无影响（本项目 Redis 走 Redisson，不用 Redis Repository）。
+
+**解决**：在 `application.yml` 关闭 Redis 仓库扫描：
+
+```yaml
+spring:
+  data:
+    redis:
+      repositories:
+        enabled: false
+```
+
 ### 7.4 启动前端
 
 后端端口变更后需对齐 Vite proxy 目标：

@@ -53,6 +53,23 @@ LLM token 流 → 句子边界检测 → 拆为句子
 - AI 语音输出期间暂停收音
 - 手动提交模式可选，避免误录
 
+### 6. 开场白 TTS 启动预热
+
+`VoiceInterviewWebSocketHandler` 在 `@PostConstruct` 中调用 `warmupOpeningAudioCache()`：读取 `voice-interview-opening.yml` 里的开场白模板，对每条调用 DashScope TTS，写入内存缓存 `openingAudioCache`，目标是用户进房时首句秒出。
+
+**代价**：每次启动真实打云端 API，开发频繁重启会耗额度；日志中会出现一长串 `[TTS] Synthesis completed successfully`。
+
+**开关**（默认关闭，适合本地开发）：
+
+| 配置 | 环境变量 | 默认 |
+|------|----------|------|
+| `app.voice-interview.warmup-opening-audio-enabled` | `APP_VOICE_INTERVIEW_WARMUP_OPENING_AUDIO_ENABLED` | `false` |
+
+- `false`：启动跳过预热，日志打印 `Opening audio cache warmup disabled`；首句走按需合成并仍可写入缓存。
+- `true`：生产可开，降低首句语音延迟。
+
+相关类：`VoiceInterviewProperties.warmupOpeningAudioEnabled`、`VoiceInterviewWebSocketHandler.warmupOpeningAudioCache`。
+
 ## 已知局限与改进方向
 
 | 局限 | 改进方向 |

@@ -49,6 +49,10 @@ Docker Compose → PG+pgvector + Redis + RustFS → .env 配置 → 前后端启
 | RustFS S3 返回 500 | 系统 HTTP_PROXY 拦截了 localhost 请求 | `NO_PROXY=localhost,127.0.0.1` |
 | Java 版本不匹配 | 系统默认 Java 8，项目需要 Java 21 | 切换到 Scoop 安装的 `temurin21-jdk` |
 | Java 21 未生效 | `JAVA_HOME` 被系统变量覆盖 | 使用绝对路径 `$JAVA_HOME/bin/java` |
+| `ERR unknown command XAUTOCLAIM` | 宿主机老 Redis 占 6379，未连 Docker Redis 7 | 停本机 Redis 或改端口；见 notes/01、05 |
+| `scoop reset` 后 `java` 仍是 8 | PATH 首位 sdkman Corretto；`java` 跟 PATH | 调整 PATH / 开新终端 |
+| 重启后面试记录消失 | `ddl-auto: create` 每次删表重建 | 改为 `update`；见 notes/07 |
+| `/api/interview/sessions` 很慢 | `findAll()` 加载 TEXT 大字段 | JPQL 投影 `findAllListItems`；见 notes/08 |
 
 ---
 

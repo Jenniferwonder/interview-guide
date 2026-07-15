@@ -8,7 +8,7 @@
 
 ## 交付物路线
 
-完整计划见 [../LEARNING_PLAN.md](../LEARNING_PLAN.md)。
+完整计划见 [../LEARNING_PLAN.md](LEARNING_PLAN.md)。
 
 | # | 交付物 | 核心问题 | 产出 |
 |---|--------|----------|:--:|
@@ -32,6 +32,8 @@
 | [04 RAG 检索增强全链路](notes/04-rag-pipeline.md) | 交付物 3、6 |
 | [05 Redis Stream 异步任务](notes/05-redis-stream-async.md) | 交付物 2 |
 | [06 实时语音通信](notes/06-voice-interview.md) | 交付物 5 |
+| [07 JPA ddl-auto 与数据丢失](notes/07-jpa-ddl-auto.md) | 交付物 0（持久化踩坑） |
+| [08 面试列表投影优化](notes/08-interview-list-projection.md) | 交付物 0（列表性能） |
 
 ---
 
@@ -41,7 +43,7 @@
 
 | 目录 | 对应交付物 | 状态 |
 |------|-----------|:--:|
-| `code-changes/00-env-setup/` | 环境搭建 + 踩坑记录 | ✅ |
+| `code-changes/00-env-setup/` | 环境搭建 + 踩坑记录；会话清单 [session-2026-07-15.md](code-changes/00-env-setup/session-2026-07-15.md) | ✅ |
 | `code-changes/01-llm-observability/` | LLM 调用可观测性 | ⬜ |
 | `code-changes/02-resume-integration-test/` | 简历分析全链路集成测试 | ⬜ |
 | `code-changes/03-rag-feedback-loop/` | RAG 检索质量评估闭环 | ⬜ |

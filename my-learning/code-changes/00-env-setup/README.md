@@ -55,6 +55,21 @@ export PATH="$JAVA_HOME/bin:$PATH"
 ./gradlew :app:bootRun --no-daemon  # --no-daemon 避免缓存旧 JVM
 ```
 
+### 4. 本会话补充踩坑（2026-07-15）
+
+| 问题 | 根因 | 解决 | 详述 |
+|------|------|------|------|
+| `ERR unknown command XAUTOCLAIM` | 宿主机老 Redis 占 6379，app 未连 Docker Redis 7 | 停本机 Redis 或改端口映射 | [01 §问题 3](../../notes/01-env-setup.md)、[05](../../notes/05-redis-stream-async.md) |
+| `scoop reset` 后 `java` 仍是 8 | PATH 首位是 sdkman Corretto 8；`java` 跟 PATH 不跟 `JAVA_HOME` | 调整 PATH / 开新终端 | [01 §问题 4](../../notes/01-env-setup.md) |
+| `'.' is not recognized` / bootRun「80%」 | CMD 不支持 `./`；`bootRun` 为常驻任务 | 用 `.\gradlew.bat`；看 Started 日志即可 | [01 §问题 5](../../notes/01-env-setup.md) |
+| Gradle busy Daemon 堆积 | 多次 bootRun 未退出 | `--stop` / `--no-daemon` | [01 §问题 6](../../notes/01-env-setup.md) |
+| 中文日志乱码 | 程序 UTF-8 vs 终端 CP936 | 终端 `chcp 65001` + profile | [01 §问题 7](../../notes/01-env-setup.md) |
+| Redis Repository 扫描 INFO 噪声 | JPA + Redis 双模块严格扫描 | `spring.data.redis.repositories.enabled: false` | [01 §问题 8](../../notes/01-env-setup.md) |
+| 重启后面试记录消失 | `ddl-auto: create` 每次删表重建 | 改为 `update`（生产用迁移工具） | [07](../../notes/07-jpa-ddl-auto.md) |
+| `/api/interview/sessions` 很慢 | `findAll()` 加载 TEXT 大字段 | JPQL 投影 `findAllListItems` | [08](../../notes/08-interview-list-projection.md) |
+
+本会话代码改动清单：[session-2026-07-15.md](session-2026-07-15.md)
+
 ---
 
 → 详细环境搭建文档见 [my-learning/notes/01-env-setup.md](../../notes/01-env-setup.md)
