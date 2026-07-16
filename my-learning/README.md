@@ -13,12 +13,12 @@
 | # | 交付物 | 核心问题 | 产出 |
 |---|--------|----------|:--:|
 | 0 | 本地环境一键启动 | 怎么把全套基础设施跑起来？ | ✅ [→](notes/01-env-setup.md) |
-| 1 | LLM 调用可观测性 | 大模型调用的延迟、成功率、Token 消耗去哪看？ | ⬜ |
+| 1 | LLM Provider 指标补齐 | Provider 维度延迟/成功率/Token 去哪看？（结构化指标已有） | ⬜ |
 | 2 | 简历分析全链路集成测试 | 异步任务链路怎么保证每个环节正确？ | ⬜ |
-| 3 | RAG 检索质量评估闭环 | 怎么知道检索到的文档对用户有没有用？ | ⬜ |
-| 4 | Prompt A/B 测试框架 | 两个 Prompt 哪个更好？怎么量化？ | ⬜ |
-| 5 | 语音面试延迟诊断 | 端到端延迟偏高的瓶颈到底在哪一段？ | ⬜ |
-| 6 | SSE 断连自动重连 | 网络闪断导致回答丢失怎么办？ | ⬜ |
+| 3 | RAG 反馈采集（MVP） | 检索有没有帮助？先留下可查询反馈 | ⬜ |
+| 4 | Prompt A/B 实验（可选） | 两版 Prompt 怎么量化对比？（离线工具） | ⬜ |
+| 5 | 语音延迟诊断报告 | 瓶颈在哪一段？（埋点大多已有，重分析） | ⬜ |
+| 6 | SSE 可靠性（重试+不丢内容） | 闪断后如何重试且保留已渲染内容？（基于 stream.ts） | ⬜ |
 
 ---
 
@@ -44,9 +44,9 @@
 | 目录 | 对应交付物 | 状态 |
 |------|-----------|:--:|
 | `code-changes/00-env-setup/` | 环境搭建 + 踩坑记录；会话清单 [session-2026-07-15.md](code-changes/00-env-setup/session-2026-07-15.md) | ✅ |
-| `code-changes/01-llm-observability/` | LLM 调用可观测性 | ⬜ |
+| `code-changes/01-llm-observability/` | LLM Provider 指标补齐 | ⬜ |
 | `code-changes/02-resume-integration-test/` | 简历分析全链路集成测试 | ⬜ |
-| `code-changes/03-rag-feedback-loop/` | RAG 检索质量评估闭环 | ⬜ |
-| `code-changes/04-prompt-ab-test/` | Prompt A/B 测试框架 | ⬜ |
-| `code-changes/05-voice-latency-diagnosis/` | 语音面试延迟诊断 | ⬜ |
-| `code-changes/06-sse-reconnect/` | SSE 断连自动重连 | ⬜ |
+| `code-changes/03-rag-feedback-loop/` | RAG 反馈采集（MVP） | ⬜ |
+| `code-changes/04-prompt-ab-test/` | Prompt A/B 实验（可选） | ⬜ |
+| `code-changes/05-voice-latency-diagnosis/` | 语音延迟诊断报告 | ⬜ |
+| `code-changes/06-sse-reconnect/` | SSE 可靠性（stream.ts 重试） | ⬜ |

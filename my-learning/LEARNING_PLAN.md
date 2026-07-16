@@ -1,309 +1,225 @@
-# 学习行动计划 — 工程级代码交付
+# 学习行动计划 — 从前端到 Java + AI 全栈
 
-> **学习方向**：从前端扩展到 AI 全栈
-> **组织方式**：7 个工程级交付物，每个是完整的"发现问题 → 改动 → 验证"闭环
-
----
-
-## 七个交付物总览
-
-```
-交付物                   核心问题
-──────────────────────────────────────────────────────────────────────
-0  环境搭建              "怎么把全套基础设施跑起来？"
-1  LLM 调用可观测性      "大模型调用延迟、成功率、Token 消耗去哪看？"
-2  简历分析全链路测试    "异步任务链路怎么保证每个环节正确？"
-3  RAG 检索质量评估闭环  "怎么知道检索到的文档对用户有没有用？"
-4  Prompt A/B 测试框架   "两个 Prompt 哪个更好？怎么量化？"
-5  语音面试延迟诊断      "端到端延迟偏高的瓶颈到底在哪一段？"
-6  SSE 断连自动重连      "网络闪断导致回答丢失怎么办？"
-```
+> **我是谁**：在职前端（React + TS 熟练），有一定 Java 基础，正把能力边界从前端向 Java 后端 + AI 应用全栈扩展。
+> **学习载体**：本仓库（Spring Boot 4.1 + Java 21 + Spring AI 2.0 + PostgreSQL/pgvector + Redis + React）。
+> **我的方式（learning in public）**：公开记录「读懂真实实现 → 补齐背后概念 → 动手改一点 → 沉淀成可复用笔记」的全过程，把踩过的坑和验证结论都开源出来，让走同一条路（前端转 Java + AI）的人少走弯路。
+> **修订（2026-07-16）**：重构为「先吃透本项目的 Java AI 全栈实现，再补齐它没覆盖的生产化能力」。
 
 ---
 
-## 交付物 0：本地环境一键启动
+## 一、我要建立的 AI 全栈能力地图
 
-### 链路
+下面是我梳理的「一个 Java AI 全栈应用需要哪些能力」，以及本项目的覆盖情况——这也是我判断「先学什么、还缺什么」的依据。
 
-```
-Docker Compose → PG+pgvector + Redis + RustFS → .env 配置 → 前后端启动
-```
+| 能力域 | 具体内容 | 本项目 |
+|--------|----------|:------:|
+| Java 后端地基 | Spring Boot 分层、DI、JPA、事务、统一响应/异常、配置管理 | ✅ 完整 |
+| LLM 接入 | 多 Provider、ChatClient、流式、结构化输出、重试 | ✅ 完整 |
+| Prompt 工程 | 模板管理、注入防护、结构化约束 | ✅ 有 |
+| RAG | 向量库、embedding、检索、Query Rewrite、TopK/阈值 | ✅ 完整 |
+| Agent / 工具调用 | tool-calling、技能编排 | ✅ 有（agent-utils） |
+| 异步 / 消息 | 队列解耦、可靠消费、重试/死信 | ✅ Redis Stream |
+| 实时通信 | WebSocket / SSE 流式 | ✅ 完整 |
+| 可观测性 | 指标、健康检查（追踪待补） | 🟡 半 |
+| 工程质量 | 限流、异常体系、测试 | 🟡 半 |
+| 生产化 | 认证鉴权、DB 迁移、部署、CI/CD | ❌ 缺 |
+| AI 质量保障 | 评测/eval、幻觉与检索质量度量 | 🟡 有评分无 eval |
+| 前端对接 | SSE/WebSocket、类型安全、流式 UI | ✅ 完整 |
 
-### 必读文件
-
-| 文件 | 关注点 |
-|------|--------|
-| `docker-compose.dev.yml` | 3 个服务的编排方式、健康检查、数据卷 |
-| `.env.example` | 所有环境变量全景 |
-| `application.yml` | Spring Boot 如何通过 `${VAR:default}` 读取配置 |
-| `docker/postgres/init.sql` | 数据库初始化脚本 |
-
-### 产出
-
-→ `my-learning/code-changes/00-env-setup/` + `my-learning/notes/01-env-setup.md`
-
-### 踩坑记录
-
-| 问题 | 根因 | 解决 |
-|------|------|------|
-| RustFS S3 返回 500 | 系统 HTTP_PROXY 拦截了 localhost 请求 | `NO_PROXY=localhost,127.0.0.1` |
-| Java 版本不匹配 | 系统默认 Java 8，项目需要 Java 21 | 切换到 Scoop 安装的 `temurin21-jdk` |
-| Java 21 未生效 | `JAVA_HOME` 被系统变量覆盖 | 使用绝对路径 `$JAVA_HOME/bin/java` |
-| `ERR unknown command XAUTOCLAIM` | 宿主机老 Redis 占 6379，未连 Docker Redis 7 | 停本机 Redis 或改端口；见 notes/01、05 |
-| `scoop reset` 后 `java` 仍是 8 | PATH 首位 sdkman Corretto；`java` 跟 PATH | 调整 PATH / 开新终端 |
-| 重启后面试记录消失 | `ddl-auto: create` 每次删表重建 | 改为 `update`；见 notes/07 |
-| `/api/interview/sessions` 很慢 | `findAll()` 加载 TEXT 大字段 | JPQL 投影 `findAllListItems`；见 notes/08 |
+本项目已经覆盖了其中大部分核心能力，我先把这些真实实现吃透；剩下的「生产化 + AI 质量保障」是项目里没有的，我自己动手补上并公开记录——这两块既是我最想搞懂的，也是笔记里对他人最有参考价值的干货。
 
 ---
 
-## 交付物 1：LLM 调用可观测性
+## 二、本项目里我要系统深挖的技术亮点
 
-### 核心问题
+> 每个亮点 = 我读了哪些文件 +  建立了哪些概念 + 我做的小验证 + 产出的笔记。我按下面顺序推进。
 
-> "项目接了多个 LLM Provider，但谁也不知道每个 Provider 的调用延迟有多少、Token 消耗多少钱、失败率多少、结构化输出重试了多少次。"
+### L0. 环境与工程基建 ✅（已完成）
 
-### 工程方案
+见 `notes/01-env-setup.md`、`notes/07-jpa-ddl-auto.md`、`notes/08-interview-list-projection.md`。已掌握：Docker Compose 编排、端口/依赖排查、ddl-auto 陷阱、JPQL 投影优化。
 
-在 `LlmProviderRegistry` 中嵌入 Micrometer 指标，利用项目已有的 Micrometer 依赖，不引入新库：
+### L1. Spring Boot 三层架构地基
 
-| 指标 | 来源 | 用途 |
-|------|------|------|
-| `llm.calls.count{provider,model,result}` | `LlmProviderRegistry` 包装层 | 各 Provider 调用次数和成功率 |
-| `llm.calls.duration{provider,model}` | 同上 | P50/P95/P99 延迟分布 |
-| `llm.tokens.used{provider,model,type}` | `ChatClient` 返回的 Usage 元数据 | Token 消耗统计 |
-| `llm.structured.retries{provider}` | `StructuredOutputInvoker` | 结构化输出重试次数 |
+- **读**：任一模块的 `Controller → Service → Repository`，如 `modules/interview/InterviewController.java`、`service/InterviewPersistenceService.java`、`repository/InterviewSessionRepository.java`
+- **概念**：依赖注入与构造器注入（`@RequiredArgsConstructor`）、`@Transactional` 边界、`JpaRepository` 派生查询、`record` 请求/响应、`Result<T>` 统一响应、`GlobalExceptionHandler` + `BusinessException` + `ErrorCode` 异常体系
+- **对应文件**：`common/result/Result.java`、`common/exception/*`、`common/config/*Properties.java`（`@ConfigurationProperties` 配置绑定）
+- **我的小验证**：给某个查询加一个派生查询方法 + 单测；讲清「为什么事务里不能包 LLM/HTTP 调用」
+- **产出**：`notes/10-spring-backend-foundations.md`
 
-### 改动范围
+### L2. Spring AI 接入与多 Provider 管理
 
-| 文件 | 改动 |
-|------|------|
-| `common/ai/LlmProviderRegistry.java` | 在调用路径中包装 Timer + Counter |
-| `common/ai/StructuredOutputInvoker.java` | 在重试循环中增加 retries 计数器 |
-| `application.yml` | 暴露 `/actuator/metrics` 端点 |
+- **读**：`common/ai/LlmProviderRegistry.java`（ChatClient 缓存、默认 Provider 回退、plain/tools/voice 三变体、advisor 装配、运行时 refresh）、`common/config/LlmProviderProperties.java`、`common/ai/ApiPathResolver.java`、`modules/llmprovider/*`（Provider 配置落库、Bootstrap 播种、API Key 加密）
+- **概念**：`ChatClient`/`ChatModel` 区别、OpenAI 兼容协议、Advisor 机制、多 Provider 抽象、密钥加密存储
+- **我的小验证**：新增一个 OpenAI 兼容 Provider（仅配置），验证运行时切换与回退
+- **产出**：补充 `notes/02-spring-ai-provider.md`
 
-### 预期产出
+### L3. 结构化输出与可靠性
 
-1. 触发几次 LLM 调用 → 访问 `/actuator/metrics/llm.calls.duration` 拉数据
-2. 输出一组 Grafana 查询语句（如果后续接 Prometheus + Grafana 可直接使用）
-3. 笔记：`my-learning/notes/02-spring-ai-provider.md` 补充可观测性部分
+- **读**：`common/ai/StructuredOutputInvoker.java`（重试循环、错误注入重试提示、schema validation、指标 `app.ai.structured_output.*`）、`StructuredOutputProperties.java`、`resume/service/ResumeGradingService.java`（`BeanOutputConverter` 实战）
+- **概念**：为什么 LLM 的 JSON 不可靠、`BeanOutputConverter`、重试与降级、LLM-as-判别的边界
+- **我的小验证**：故意让模型输出坏 JSON，观察重试与指标变化
+- **产出**：补充 `notes/02-spring-ai-provider.md` 结构化输出章节
 
----
+### L4. Prompt 工程与注入防护
 
-## 交付物 2：简历分析全链路集成测试
+- **读**：`common/ai/PromptSanitizer.java`、`PromptSecurityConstants.java`、`resources/prompts/*.st`（StringTemplate 模板）
+- **概念**：Prompt 模板化管理、注入攻击与防护、system/user 职责分离
+- **我的小验证**：写一个恶意输入用例，验证 sanitizer 行为
+- **产出**：`notes/11-prompt-engineering-security.md`
 
-### 核心问题
+### L5. RAG 检索增强全链路
 
-> "简历分析依赖 S3 上传和 LLM 调用两个外部服务，现有测试只测单个 Service，没有任何测试能验证'上传 → Stream → 消费 → LLM → 落库'的完整异步链路。"
+- **读**：`modules/knowledgebase/service/KnowledgeBaseVectorService.java`（分批向量化、metadata、pgvector 存储）、`KnowledgeBaseQueryService.java`（Query Rewrite、按 query 长度调 TopK/阈值）、`KnowledgeBaseQueryProperties.java`、`listener/VectorizeStream*`（异步向量化）
+- **概念**：embedding 维度/距离（COSINE、dim 1024）、HNSW 索引、分块策略、Query Rewrite、TopK 与相似度阈值、召回 vs 精度
+- **我的小验证**：调一次 chunk size 或 TopK，人工对比检索结果差异（为 G5 的 eval 打基础）
+- **产出**：补充 `notes/04-rag-pipeline.md`
 
-### 工程方案
+### L6. Agent / 工具调用（tool-calling）
 
-用 `@SpringBootTest` + `@TestConfiguration` 启动完整 Spring 上下文（含 Redis Stream），Mock S3 和 LLM 两个外部依赖，驱动完整异步链路验证：
+- **读**：`common/ai/AgentUtilsConfiguration.java`、`LlmProviderRegistry` 里 voice/tools 变体的 advisor 装配、`resources/skills/`
+- **概念**：function/tool calling 原理、工具注册与编排、何时用 Agent vs 纯 RAG
+- **我的小验证**：读懂一次带工具的调用链路，画出「LLM 决定调用工具 → 执行 → 回填」时序
+- **产出**：`notes/12-agent-tool-calling.md`
 
-```
-测试流程:
-1. POST /api/resume/upload → 断言 200 + taskId
-2. 查询 Redis Stream 断言消息已入队
-3. Consumer 拉取消息 → Mock Tika 返回固定文本 → Mock LLM 返回固定分析结果
-4. 断言 ResumeEntity: PENDING → PROCESSING → COMPLETED
-5. 重复上传 → 断言去重逻辑生效
+### L7. Redis Stream 异步任务体系
 
-异常场景:
-6. Mock LLM 返回非 JSON → 断言 3 次重试后状态为 FAILED
-```
+- **读**：`common/async/AbstractStreamProducer.java`/`AbstractStreamConsumer.java`、`infrastructure/redis/RedisService.java`（`autoClaim`/`XAUTOCLAIM` 回收）、`constant/AsyncTaskStreamConstants.java`、各模块 `listener/`
+- **概念**：生产者/消费者组、ACK、Pending 回收、重试与 FAILED 死信、幂等与实体存在性校验、为何不用 `@Async`
+- **我的小验证**：给一个新任务类型走一遍 Producer/Consumer 模板
+- **产出**：补充 `notes/05-redis-stream-async.md`
 
-### 改动范围
+### L8. 限流与横切能力（AOP）
 
-| 文件 | 改动 |
-|------|------|
-| `app/build.gradle` | 确认 `spring-boot-starter-test` 依赖 |
-| `app/src/test/` 新增 `ResumeAnalysisIntegrationTest.java` | 核心测试 |
-| `app/src/test/` 新增 `TestConfig.java` | Mock 配置（S3Client + ChatClient） |
+- **读**：`common/aspect/RateLimitAspect.java`（Lua 脚本 + Redisson）、`common/annotation/RateLimit.java`
+- **概念**：AOP 切面、注解驱动、Redis + Lua 原子限流、多维度（GLOBAL/IP/SESSION）
+- **我的小验证**：给某接口加 `@RateLimit`，用脚本压测触发限流
+- **产出**：`notes/13-rate-limit-aop.md`
 
-### 预期产出
+### L9. 实时语音（WebSocket 全双工 + 流式管线）
 
-1. `./gradlew :app:test --tests ResumeAnalysisIntegrationTest` 全部通过
-2. 笔记：`my-learning/notes/05-redis-stream-async.md` 补充集成测试部分
+- **读**：`modules/voiceinterview/handler/VoiceInterviewWebSocketHandler.java`（连接生命周期、VAD 断句、LLM 流式→句子级并发 TTS、回声防护、Micrometer 埋点）、`service/QwenAsrService.java`/`QwenTtsService.java`/`DashscopeLlmService.java`、`config/WebSocketConfig.java`
+- **概念**：WebSocket vs SSE vs WebRTC、级联管线（ASR→LLM→TTS）、边生成边合成边播、首包延迟优化
+- **我的小验证**：读懂一轮对话的时序，标注各段 Micrometer 指标
+- **产出**：补充 `notes/06-voice-interview.md`
 
----
+### L10. 统一评估引擎与文件/导出基建
 
-## 交付物 3：RAG 检索质量评估闭环
-
-### 核心问题
-
-> "RAG 问答用 Query Rewrite + pgvector 检索后拼到 LLM，但没人知道检索到的文档片段到底对回答有没有帮助。"
-
-### 工程方案
-
-在 RAG 回答完成后，前端添加 👍/👎 反馈按钮。点击后 POST 到新增评分接口，落库到 `rag_chat_feedback` 表。积累数据后可按知识库、查询类型分析检索质量，反向优化分块策略和 TopK 参数。
-
-### 改动范围
-
-| 文件 | 改动 |
-|------|------|
-| `modules/knowledgebase/model/` 新增 `RagChatFeedbackEntity.java` | 评分实体 |
-| `modules/knowledgebase/repository/` 新增 `RagChatFeedbackRepository.java` | JPA Repository |
-| `modules/knowledgebase/RagChatController.java` | 新增 `POST /api/rag-chat/{messageId}/feedback` |
-| `frontend/src/pages/KnowledgeBaseQueryPage.tsx` | 每条回答下方添加 👍👎 按钮 |
-| `frontend/src/api/ragChat.ts` | 新增 `submitFeedback()` API |
-
-### 数据模型
-
-```sql
-rag_chat_feedback:
-  id, message_id, session_id, knowledge_base_id,
-  rating, comment, query_rewritten, top_k_doc_ids, created_at
-```
-
-### 预期产出
-
-1. 前端截图：RAG 回答下方出现评分按钮
-2. DB 中有评分记录
-3. 笔记：`my-learning/notes/04-rag-pipeline.md` 补充质量评估部分
+- **读**：`common/evaluation/UnifiedEvaluationService.java`、`EvaluationReport.java`；`infrastructure/file/*`（`FileStorageService` S3、`DocumentParseService` Tika、`FileHashService` 去重）、`infrastructure/export/` iText PDF、`infrastructure/mapper/` MapStruct
+- **概念**：文字/语音面试共用评估、S3 兼容存储、文档解析、对象映射
+- **产出**：补充 `notes/03-unified-evaluation.md`
 
 ---
 
-## 交付物 4：Prompt A/B 测试框架
+## 三、本项目没覆盖、我要额外补齐的生产化能力
 
-### 核心问题
+> 这些是本项目**没有或很弱**、但一个能真正上线的 AI 应用绕不开的能力。项目里没有现成代码可读，所以我自己动手加、再完整写成笔记——这部分最能体现我从「跑通」到「做扎实」的过程，也是我笔记里最想帮到他人的干货。
 
-> "改了一版 Prompt，但不知道新版本比旧版本好还是坏。凭感觉判断不靠谱。"
+### G1. 认证与鉴权（Spring Security + JWT）❌ 项目当前无
 
-### 工程方案
+- **为什么补**：任何真实系统都要登录与权限，当前项目所有接口都是裸奔的；我想把它做成有用户隔离的应用
+- **怎么做**：引入 `spring-boot-starter-security`，实现 JWT 登录、`SecurityFilterChain`、方法级 `@PreAuthorize`，把面试/知识库接口按用户隔离
+- **我的验收**：未登录 401、越权 403、`/api/**` 需 token；`notes/20-spring-security-jwt.md`
 
-实现 `PromptAbTestService`：传入同一个输入、两个版本的 Prompt 模板，并行调用 LLM 获取结果，再用另一个 LLM 调用进行结构化评分（准确性/完整性/相关性三维度），自动选出优胜者。
+### G2. 数据库迁移（Flyway）❌ 项目当前靠 ddl-auto
 
-### 改动范围
+- **为什么补**：生产环境不能让 `ddl-auto` 自动改表（我在 `notes/07` 里踩过重启丢数据的坑），版本化迁移是绕不开的一环
+- **怎么做**：引入 Flyway，把现有表结构固化为 `V1__init.sql`，`ddl-auto` 改 `validate`
+- **我的验收**：重启不再依赖自动建表；迁移可版本化回滚；`notes/21-flyway-migration.md`
 
-| 文件 | 改动 |
-|------|------|
-| `common/ai/` 新增 `PromptAbTestService.java` | A/B 测试核心逻辑 |
-| `resources/prompts/prompt-ab-evaluation.st` | 评分 Prompt 模板 |
-| `common/ai/` 新增 `PromptAbTestRequest.java` / `PromptAbTestResult.java` | record 定义 |
+### G3. 分布式追踪与结构化日志 🟡 只有指标
 
-### 核心方法
+- **为什么补**：AI 调用链路很长（HTTP→Stream→LLM→DB），出问题时我要能把一次请求串起来看
+- **怎么做**：加 `micrometer-tracing` + OpenTelemetry（或 Zipkin），给一次 RAG/简历分析链路打 traceId；日志加 MDC
+- **我的验收**：一条请求能在追踪里看到跨 Service/Stream 的 span；`notes/22-tracing-observability.md`
 
-```java
-public PromptAbTestResult compare(
-    String input,
-    String promptTemplateA, String promptTemplateB,
-    String abEvaluationPrompt
-) {
-    // 1. 并行调用两版 Prompt
-    var fA = CompletableFuture.supplyAsync(() -> chatClient.call(templateA, input));
-    var fB = CompletableFuture.supplyAsync(() -> chatClient.call(templateB, input));
-    var outA = fA.join(); var outB = fB.join();
+### G4. 测试体系（单测 + 集成 + Testcontainers）🟡 偏弱、多 @Disabled
 
-    // 2. LLM 三维度评分
-    var scores = structuredOutputInvoker.invoke(abEvaluationPrompt,
-        Map.of("input", input, "outputA", outA, "outputB", outB), AbScores.class);
+- **为什么补**：当前 Redis 相关测试常被 `@Disabled`，我想让核心链路能自动回归验证
+- **怎么做**：用 Testcontainers 起真实 Redis/PG，写「简历分析全链路」集成测试（Mock S3/LLM，验证 PENDING→COMPLETED / FAILED）
+- **我的验收**：`./gradlew :app:test` 默认可跑通链路测试；`notes/05` 增补集成测试章节
 
-    // 3. 返回对比结论
-    return new PromptAbTestResult(outA, outB, scores,
-        scores.total(A) > scores.total(B) ? "A" : "B");
-}
-```
+### G5. AI 质量评估 / Eval 🟡 有面试评分、无检索/答案 eval
 
-### 预期产出
+- **为什么补**：这是 AI 应用与普通后端最大的区别——**要能量化「答得好不好」**。这也是我最想搞懂、最值得公开记录的一块
+- **怎么做（Java 内实现，不引 Python）**：为 RAG 建一个小评测集（20~30 条 Q + 期望要点），实现 faithfulness / 命中率的度量（用固定裁判模型做 LLM-as-judge），做一次 chunk/TopK 调参前后对比
+- **我的验收**：一张「参数改动 → 指标变化」对比表 + 结论；`notes/23-rag-evaluation.md`
 
-1. 选一个已有 Prompt（如简历分析），写对照版本，跑 A/B 测试
-2. 输出：A 版得分 / B 版得分 / 优胜者
-3. 笔记：`my-learning/notes/03-unified-evaluation.md` 补充 A/B 测试部分
+### G6. 应用容器化与部署 / CI 🟡 有 compose 无流水线
 
----
+- **为什么补**：全栈意味着要能把整套东西交付、跑起来
+- **怎么做**：完善 `app/Dockerfile` 多阶段构建、`docker-compose.yml` 全栈起服务；加一个 GitHub Actions（build + test）
+- **我的验收**：一条命令起全栈；PR 触发 CI；`notes/24-docker-cicd.md`
 
-## 交付物 5：语音面试延迟诊断
+### G7. SSE 流式可靠性
 
-### 核心问题
-
-> "项目已知端到端延迟偏高，但不知道是哪一段慢——ASR 慢？LLM 生成慢？TTS 合成慢？没有分阶段数据，没法精准优化。"
-
-### 工程方案
-
-在语音面试的三个关键节点利用项目已有的 Micrometer 加 `@Timed` 埋点：
-
-| 埋点位置 | 指标名 | 测量内容 |
-|----------|--------|----------|
-| `QwenAsrService.transcribe()` | `voice.asr.duration` | 单句语音识别耗时 |
-| `DashscopeLlmService.generate()` | `voice.llm.duration` | LLM 生成回答耗时 |
-| `QwenTtsService.synthesize()` | `voice.tts.duration` | 单句 TTS 合成耗时 |
-| `VoiceInterviewWebSocketHandler` | `voice.e2e.duration` | 用户说完 → 开始播放端到端延迟 |
-
-### 改动范围
-
-| 文件 | 改动 |
-|------|------|
-| `modules/voiceinterview/QwenAsrService.java` | 加 `@Timed("voice.asr")` |
-| `modules/voiceinterview/QwenTtsService.java` | 加 `@Timed("voice.tts")` |
-| `modules/voiceinterview/DashscopeLlmService.java` | 加 `@Timed("voice.llm")` |
-| `modules/voiceinterview/VoiceInterviewWebSocketHandler.java` | 加端到端 Timer |
-
-### 预期产出
-
-1. 完成语音面试 → 访问 `/actuator/metrics` 拉取各段延迟数据
-2. 输出延迟分布：ASR / LLM / TTS 各段的 avg / p95 / p99
-3. 瓶颈结论 + 改善建议
-4. 笔记：`my-learning/notes/06-voice-interview.md` 补充延迟诊断部分
+- **为什么补**：这是我的前端强项，也是真实体验里的痛点，正好把前后端衔接做稳
+- **怎么做**：`frontend/src/api/stream.ts` 加指数退避重试、已渲染内容保留、流完成后按 messageId 补齐（现状是 `fetch`+`ReadableStream`，非 `EventSource`）
+- **我的验收**：断网可恢复不丢内容；`notes/04` 增补 SSE 可靠性
 
 ---
 
-## 交付物 6：SSE 断连自动重连 + 断点续传
+## 四、分阶段学习路线
 
-### 核心问题
+```mermaid
+flowchart TD
+    P0["阶段0 环境 已完成"] --> P1
+    P1["阶段1 后端地基 L1,L8,L10"] --> P2
+    P2["阶段2 AI 核心 L2,L3,L4,L5,L6"] --> P3
+    P3["阶段3 工程化 L7,L9 + G3,G4"] --> P4
+    P4["阶段4 生产化+AI质量 G1,G2,G5,G6,G7"]
+```
 
-> "知识库问答采用 SSE 流式输出，但网络闪断后 `EventSource` 直接中断，前端没有任何恢复逻辑，用户只能刷新页面重来，已回答内容全部丢失。"
+| 阶段 | 目标 | 学习项 | 主要产出 |
+|------|------|--------|----------|
+| 1 后端地基 | 能读懂/改任一模块 | L1、L8、L10 | notes 10、13 + 03 增补 |
+| 2 AI 核心 | 掌握 LLM/RAG/Agent | L2、L3、L4、L5、L6 | notes 02、04、11、12 增补 |
+| 3 工程化 | 异步/实时/可观测/可测 | L7、L9、G3、G4 | notes 05、06、22 + 集成测试 |
+| 4 生产化 | 认证/迁移/评估/部署 | G1、G2、G5、G6、G7 | notes 20~24 |
 
-### 工程方案
-
-**后端**：RagChat SSE 端点支持 `Last-Event-ID` 请求头，识别断点后从对应位置继续推送。
-
-**前端**：抽取通用 `useSSE` Hook，实现：
-- `EventSource` 原生 `Last-Event-ID` 自动续传
-- Exponential Backoff 重连：1s → 2s → 4s → 8s → 16s（上限）
-- 已渲染消息保持显示，重连成功后追加新内容
-- 超最大重试次数后弹提示
-
-### 改动范围
-
-| 文件 | 改动 |
-|------|------|
-| `modules/knowledgebase/RagChatController.java` | SSE 支持 `Last-Event-ID` 断点续推 |
-| `frontend/src/hooks/` 新增 `useSSE.ts` | 通用 SSE Hook（含重连 + 续传） |
-| `frontend/src/api/ragChat.ts` | 从内联 `EventSource` 切换到 `useSSE` |
-| `frontend/src/pages/KnowledgeBaseQueryPage.tsx` | 重连状态提示 UI |
-
-### 预期产出
-
-1. 断网 → 前端显示"重连中…" → 恢复 → 自动续传，之前内容不丢失
-2. Chrome DevTools Network 截图：`Last-Event-ID` 衔接
-3. 笔记：`my-learning/notes/04-rag-pipeline.md` 补充 SSE 可靠性部分
+**我的执行原则**：
+1. 每个学习项先「读代码 + 画一张图」再动手，不让自己停在「看过但没懂」
+2. 小改动优先（加一个方法/一条测试/一个配置），先跑通再深入
+3. 每项沉淀一篇公开笔记，写到「别人照着能复现、能看懂」的程度——这是我践行 learning in public 的方式
+4. 生产化缺口（G 系列）是我重点投入的部分，也是我最想帮到同路人的干货
 
 ---
 
-## 笔记索引
+## 五、笔记与代码改动索引
 
 ```
-交付物 0 → my-learning/code-changes/00-env-setup/ + my-learning/notes/01-env-setup.md ✅
-交付物 1 → my-learning/notes/02-spring-ai-provider.md + my-learning/code-changes/01-llm-observability/
-交付物 2 → my-learning/notes/05-redis-stream-async.md  + my-learning/code-changes/02-resume-integration-test/
-交付物 3 → my-learning/notes/04-rag-pipeline.md        + my-learning/code-changes/03-rag-feedback-loop/
-交付物 4 → my-learning/notes/03-unified-evaluation.md  + my-learning/code-changes/04-prompt-ab-test/
-交付物 5 → my-learning/notes/06-voice-interview.md     + my-learning/code-changes/05-voice-latency-diagnosis/
-交付物 6 → my-learning/notes/04-rag-pipeline.md        + my-learning/code-changes/06-sse-reconnect/
+已完成
+  notes/01-env-setup.md            环境搭建 + 踩坑        ✅
+  notes/07-jpa-ddl-auto.md         ddl-auto 数据丢失      ✅
+  notes/08-interview-list-projection.md  列表投影优化     ✅
+  notes/02-spring-ai-provider.md   多 Provider（待增补 L2/L3）
+  notes/03-unified-evaluation.md   统一评估（待增补 L10）
+  notes/04-rag-pipeline.md         RAG（待增补 L5/G7）
+  notes/05-redis-stream-async.md   异步（待增补 L7/G4）
+  notes/06-voice-interview.md      语音（待增补 L9）
+
+待新增
+  notes/10-spring-backend-foundations.md   L1 后端地基
+  notes/11-prompt-engineering-security.md  L4 Prompt 工程与防护
+  notes/12-agent-tool-calling.md           L6 工具调用
+  notes/13-rate-limit-aop.md               L8 限流与 AOP
+  notes/20-spring-security-jwt.md          G1 认证鉴权
+  notes/21-flyway-migration.md             G2 数据库迁移
+  notes/22-tracing-observability.md        G3 追踪与可观测
+  notes/23-rag-evaluation.md               G5 AI 质量评估
+  notes/24-docker-cicd.md                  G6 容器化与 CI
 ```
+
+代码改动仍按 `code-changes/` 目录组织；G 系列每完成一项，新增对应目录与 diff。
 
 ---
 
-## 计划执行顺序
+## 六、成果主线：走完这条路我能讲清楚、也能教别人的能力
 
-```
-前端优势（先做）:              通用能力（第二波）:           深层积累（第三波）:
-──────────────────────     ──────────────────────      ──────────────────────
-⑥ SSE 断连自动重连         ① LLM 调用可观测性          ② 简历分析全链路集成测试
-（前端 Hook + 后端小改）    （Micrometer 不引入新库）    （Spring Test + Mock 体系）
+这条路径走完，我希望能把下面每一块都讲清楚原理、说明白取舍，并通过公开笔记帮到同样从前端补齐 Java 后端 + AI 的人：
 
-                           ③ RAG 检索质量评估闭环       ④ Prompt A/B 测试框架
-                           （全栈改动，前后端联动）      （策略模式 + 抽象设计）
-
-                           ⑤ 语音面试延迟诊断
-                           （埋点 + 数据分析）
+- **Java AI 全栈**：基于 Spring Boot 4 + Spring AI 2，读懂并动手扩展多 Provider LLM 接入、结构化输出容错、RAG（pgvector）、tool-calling 与实时语音（WebSocket）全链路
+- **工程化**：Redis Stream 异步任务（ACK/重试/死信/XAUTOCLAIM 回收）、AOP + Lua 分布式限流、Micrometer 指标与分布式追踪
+- **生产化**：Spring Security + JWT 鉴权、Flyway 迁移、Testcontainers 集成测试、Docker + CI
+- **AI 质量**：为 RAG 建评测集并用数据驱动调参（faithfulness/命中率），把「改得好不好」量化下来
+- **前端衔接**：React + TS 的 SSE/WebSocket 流式 UI 与断连恢复
 ```
