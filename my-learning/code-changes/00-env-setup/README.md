@@ -66,7 +66,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 | 中文日志乱码 | 程序 UTF-8 vs 终端 CP936 | 终端 `chcp 65001` + profile | [01 §问题 7](../../notes/01-env-setup.md) |
 | Redis Repository 扫描 INFO 噪声 | JPA + Redis 双模块严格扫描 | `spring.data.redis.repositories.enabled: false` | [01 §问题 8](../../notes/01-env-setup.md) |
 | 重启后面试记录消失 | `ddl-auto: create` 每次删表重建 | 改为 `update`（生产用迁移工具） | [07](../../notes/07-jpa-ddl-auto.md) |
-| `/api/interview/sessions` 很慢 | `findAll()` 加载 TEXT 大字段 | JPQL 投影 `findAllListItems` | [08](../../notes/08-interview-list-projection.md) |
+| `/api/interview/sessions` 很慢 | `findAll()` 加载 TEXT 大字段 | 分析完成；JPQL 投影 `findAllListItems` 待落地（归 L1） | [08](../../notes/08-interview-list-projection.md) |
 
 本会话代码改动清单：[session-2026-07-15.md](session-2026-07-15.md)
 

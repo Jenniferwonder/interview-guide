@@ -1,7 +1,17 @@
 # 面试会话列表投影优化
 
 > 对应接口：`GET /api/interview/sessions`（前端经 Vite 代理为 `http://localhost:5173/api/interview/sessions`）  
-> 对应源码：`InterviewSessionRepository`、`InterviewPersistenceService`、`InterviewController`、`SessionListItemDTO`
+> 对应源码：`InterviewSessionRepository`、`InterviewPersistenceService`、`InterviewController`、`SessionListItemDTO`  
+> 状态：🟡 **已分析根因与改法，代码尚未落地**——当前仍是 `findAll()` 加载完整 Entity，再 `SessionListItemDTO.from(entity)`
+
+## 名词：JPQL 与 DTO
+
+| 缩写 | 全称 | 一句话 |
+|------|------|--------|
+| **JPQL** | **J**ava **P**ersistence **Q**uery **L**anguage | JPA 的查询语言，写在实体/属性层面（如 `FROM InterviewSessionEntity s`），由 Hibernate 翻译成 SQL |
+| **DTO** | **D**ata **T**ransfer **O**bject | 只承载传输所需字段的数据对象；列表用轻量 DTO，避免把整张表/Entity 原样返回前端 |
+
+**投影（projection）**：查询时只选出需要的列，并直接构造成 DTO（如 `SELECT new ...SessionListItemDTO(...)`），而不是先查出完整 Entity 再在内存里裁剪。
 
 ## 现象
 

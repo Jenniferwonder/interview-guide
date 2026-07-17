@@ -38,8 +38,8 @@
 
 | # | 主题 | 我要读懂/验证的核心 | 笔记 | 状态 |
 |---|------|----------------------|------|:--:|
-| L0 | 环境与工程基建 | Docker Compose 编排、ddl-auto 陷阱、JPQL 投影 | [01](my-learning/notes/01-env-setup.md) · [07](my-learning/notes/07-jpa-ddl-auto.md) · [08](my-learning/notes/08-interview-list-projection.md) | ✅ |
-| L1 | Spring Boot 三层地基 | DI / 事务边界 / 统一响应 / 异常体系 | `notes/10`（计划） | ⬜ |
+| L0 | 环境与工程基建 | Docker Compose 编排、端口排查、ddl-auto 陷阱 | [01](my-learning/notes/01-env-setup.md) · [07](my-learning/notes/07-jpa-ddl-auto.md) | ✅ |
+| L1 | Spring Boot 三层地基 | DI / 事务边界 / 派生查询 / 异常体系 | `notes/10`（计划） | ⬜ |
 | L2 | Spring AI 多 Provider | ChatClient 缓存、回退、Advisor、密钥加密 | [02](my-learning/notes/02-spring-ai-provider.md) | ⬜ |
 | L3 | 结构化输出与可靠性 | 重试循环、schema 校验、`BeanOutputConverter` | [02](my-learning/notes/02-spring-ai-provider.md) | ⬜ |
 | L4 | Prompt 工程与注入防护 | 模板化、sanitizer、system/user 分离 | `notes/11`（计划） | ⬜ |

@@ -33,7 +33,7 @@
 | [05 Redis Stream 异步任务](notes/05-redis-stream-async.md) | 交付物 2 |
 | [06 实时语音通信](notes/06-voice-interview.md) | 交付物 5 |
 | [07 JPA ddl-auto 与数据丢失](notes/07-jpa-ddl-auto.md) | 交付物 0（持久化踩坑） |
-| [08 面试列表投影优化](notes/08-interview-list-projection.md) | 交付物 0（列表性能） |
+| [08 面试列表投影优化](notes/08-interview-list-projection.md) | L1 三层地基（已分析，代码待落地） |
 
 ---
 
